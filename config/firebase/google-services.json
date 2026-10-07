@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "463531743724",
+    "project_id": "wc-review-11c48",
+    "storage_bucket": "wc-review-11c48.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:463531743724:android:5bbe72adab1b2a6b4608c9",
+        "android_client_info": {
+          "package_name": "com.wcreview.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAXpEWM9T-yUWV9gqIyj_v0Tknznuk34Xs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
