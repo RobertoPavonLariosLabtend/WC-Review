@@ -1,9 +1,14 @@
 import type { AuthRepository } from '../domain/auth-repository';
-import { validateCredentials } from '../domain/credentials.ts';
+import { validateCredentials, validateRegistration } from '../domain/credentials.ts';
 import type { AuthUser } from '../domain/auth-user';
 
 export function createAuthUseCases(repository: AuthRepository) {
   return {
+    async createAccount(email: string, password: string, confirmation: string) {
+      const validation = validateRegistration(email, password, confirmation);
+      if (validation) throw Object.assign(new Error(validation.code), validation);
+      return repository.createAccount(email.trim(), password);
+    },
     async loginWithEmail(email: string, password: string) {
       const validation = validateCredentials(email, password);
       if (validation) throw Object.assign(new Error(validation.code), validation);

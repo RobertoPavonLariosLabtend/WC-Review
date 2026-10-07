@@ -1,4 +1,4 @@
-import { GoogleAuthProvider, getAuth, onAuthStateChanged, signInWithCredential, signInWithEmailAndPassword, signOut } from '@react-native-firebase/auth';
+import { GoogleAuthProvider, createUserWithEmailAndPassword, getAuth, onAuthStateChanged, signInWithCredential, signInWithEmailAndPassword, signOut } from '@react-native-firebase/auth';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
@@ -22,6 +22,10 @@ export function createFirebaseAuthRepository(): AuthRepository {
 
   return {
     observeSession: listener => onAuthStateChanged(getAuth(), user => listener(mapAuthUser(user))),
+    createAccount: (email, password) => run(async () => {
+      const result = await createUserWithEmailAndPassword(getAuth(), email, password);
+      return mapAuthUser(result.user);
+    }),
     loginWithEmail: (email, password) => run(async () => {
       const result = await signInWithEmailAndPassword(getAuth(), email, password);
       return mapAuthUser(result.user);

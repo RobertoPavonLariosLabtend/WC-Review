@@ -10,9 +10,9 @@ src/
   features/
     auth/
       domain/                  AuthUser, AuthRepository, validación
-      use-cases/               Email, Google, sesión, disponibilidad y logout
+      use-cases/               Email, registro, Google, sesión, disponibilidad y logout
       repository/              Firebase, Google y mapeo de usuarios
-      ui/                      Login, provider, inicialización y mensajes
+      ui/                      Login, registro, provider, inicialización y mensajes
     counter/
       domain/                  Contrato CounterRepository
       use-cases/               Consultar, incrementar y reiniciar
