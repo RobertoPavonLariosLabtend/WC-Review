@@ -12,7 +12,12 @@
           "package_name": "com.wcreview.app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "463531743724-fp10pl4ftnan31dittmntga41mqmhai5.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAXpEWM9T-yUWV9gqIyj_v0Tknznuk34Xs"
@@ -20,7 +25,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "463531743724-fp10pl4ftnan31dittmntga41mqmhai5.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "463531743724-dlk3aes5vd6c12m3efipplml9k55vrrt.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.wcreview.app"
+              }
+            }
+          ]
         }
       }
     }
