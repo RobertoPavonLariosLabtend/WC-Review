@@ -21,4 +21,8 @@
 - [x] 4.2 Export both mobile bundles and regenerate/compile iOS and Android without Google Maps keys.
 - [ ] 4.3 Verify native map rendering, real marker selection, photographs/credits, dismissal, camera, text/small screen, location denial and session transitions on both platforms; record exact limits.
 - [x] 4.4 Update setup/architecture/README and verification evidence, commit scoped changes on feature/main-screen and push for review, preserving unrelated appleTeamId and main.
-- [ ] 4.5 Sync/archive only after required native acceptance is complete. Passing builds alone do not satisfy acceptance.
+- [x] 4.5 Sync/archive at the user's explicit request with native acceptance deferred; preserve the incomplete 4.3 checklist and verification limits. Passing builds alone do not satisfy acceptance.
+
+## Archive exception
+
+Archived at the user's explicit request on 2026-10-07 after disclosure of pending native acceptance. Task 4.3 remains incomplete. OSM supersedes the initial catalogue in the active composition; see the archived add-osm-establishments verification.

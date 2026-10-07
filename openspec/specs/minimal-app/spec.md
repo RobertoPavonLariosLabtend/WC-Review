@@ -7,7 +7,7 @@ Proporcionar una aplicación móvil mínima e interactiva para comprobar el arra
 ## Requirements
 
 ### Requirement: Initial screen
-The app SHALL show login when no session exists and SHALL show the Spanish counter screen initialized to zero after session restoration identifies an authenticated user.
+The app SHALL show login when no session exists and SHALL show the Spanish main MapLibre map screen after session restoration identifies an authenticated user.
 
 #### Scenario: Fresh launch
 - **WHEN** the user opens the installed app without a session
@@ -15,18 +15,7 @@ The app SHALL show login when no session exists and SHALL show the Spanish count
 
 #### Scenario: Authenticated launch
 - **WHEN** session restoration identifies an authenticated user
-- **THEN** the authenticated screen shows the counter initialized to zero
-
-### Requirement: Counter interaction
-The app SHALL let users increment the counter by one and reset it to zero.
-
-#### Scenario: Increment
-- **WHEN** the user presses Incrementar twice from zero
-- **THEN** the counter displays 2
-
-#### Scenario: Reset
-- **WHEN** the user presses Reiniciar after incrementing the counter
-- **THEN** the counter displays 0
+- **THEN** the authenticated main map screen appears
 
 ### Requirement: Native iOS startup
 The app SHALL compile for an iOS simulator and launch as an installed native application.

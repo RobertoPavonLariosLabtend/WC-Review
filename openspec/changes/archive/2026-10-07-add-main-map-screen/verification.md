@@ -60,3 +60,11 @@ Se ejecutó `xcodebuild -resolvePackageDependencies -workspace ios/WCReview.xcwo
 La primera apertura posterior dio timeout al utilizar el puerto 8081, sin Metro activo: el comando Expo terminó con error después de compilar e instalar correctamente. Se abrió por separado la URL del development client con el Metro activo en 8082 y se abrió WC Review desde el simulador. Se observaron el mapa real, ambos puntos azules, la sesión existente restaurada y la ficha de Casa Labra con fotografía, descripción, dirección y créditos al pulsar su botón. No se ejecutó login/logout ni se solicitó ubicación. No fue necesario modificar código ni copiar el framework.
 
 Las advertencias de fases RNFB/Expo no son errores de compilación. Vuelven a pasar las 33 pruebas y npm run check (lint, TypeScript y versiones Expo). La reparación y el procedimiento se documentan en docs/main-map-setup.md. Esta comprobación no completa la aceptación funcional pendiente en ambas plataformas.
+
+## Archivado solicitado con aceptación pendiente (7 de octubre de 2026)
+
+El usuario solicitó expresamente archivar después de recibir el detalle de las tareas 4.3/4.5 pendientes. Se sincronizan las especificaciones y se archiva como excepción al criterio inicial de esperar la aceptación nativa completa. La tarea 4.3 permanece sin completar; no se presenta el archivado como aceptación de sus escenarios.
+
+La integración OSM posterior sustituye al catálogo de dos sitios en la composición activa. Sus comprobaciones están en `../2026-10-07-add-osm-establishments/verification.md`: 49 pruebas, lint/typecheck y exportaciones correctas; 300 sitios y foto real de Teatro Alfil con créditos observados en la app iOS normal, sesión existente restaurada, cierre de ficha y búsqueda/reintento. Las referencias anteriores al catálogo y 33 pruebas describen la fase histórica de MapLibre.
+
+Quedan pendientes la aceptación interactiva Android y, en ambas plataformas, pantalla pequeña/texto grande, permiso de ubicación denegado/concedido y login/logout/cambio de usuario. Se conserva este registro para seguimiento posterior. No se integra main y se preserva el cambio local ajeno appleTeamId.

@@ -24,3 +24,7 @@ WC Review necesita un mapa y fichas de establecimientos sin exigir una cuenta de
 ## Impact
 
 Feature main-screen y composición; plugin @maplibre/maplibre-react-native; catálogo editorial y fotos en repository; retirada de react-native-maps, adaptadores de transporte Places y functions/firebase.json. No cambian Firebase Authentication ni el login Google. Mantener la rama propietaria feature/main-screen y el cambio local ajeno appleTeamId. Verificar pruebas, lint, tipos, exportaciones y ambos builds; la aceptación nativa se registra sin confundirla con compilación.
+
+## Estado al archivar
+
+El alcance inicial del catálogo editorial se amplió mediante `add-osm-establishments`, archivado el 7 de octubre de 2026. La composición activa consulta OSM por zona y resuelve imágenes Commons/Wikidata asociadas; el catálogo empaquetado se conserva como adapter alternativo. La especificación main-map refleja ese estado actual. El usuario solicitó archivar este cambio tras conocer la aceptación nativa pendiente; el archivado no acredita esos escenarios ni autoriza integrar main.

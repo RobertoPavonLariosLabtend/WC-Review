@@ -41,3 +41,7 @@ Actualizar artefactos existentes con la decisión del usuario, instalar con expo
 - https://maplibre.org/maplibre-react-native/docs/components/map/
 - https://maplibre.org/maplibre-react-native/docs/components/camera/
 - https://openfreemap.org/quick_start/
+
+## Estado al archivar
+
+El alcance inicial del catálogo editorial se amplió mediante `add-osm-establishments`, archivado el 7 de octubre de 2026. La composición activa consulta OSM por zona y resuelve imágenes Commons/Wikidata asociadas; el catálogo empaquetado se conserva como adapter alternativo. La especificación main-map refleja ese estado actual. El usuario solicitó archivar este cambio tras conocer la aceptación nativa pendiente; el archivado no acredita esos escenarios ni autoriza integrar main.

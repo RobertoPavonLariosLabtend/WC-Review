@@ -31,7 +31,7 @@ The application SHALL allow panning and zooming without location permission. It 
 - **THEN** a readable Spanish message appears and the map remains interactive
 
 ### Requirement: Select visible establishments
-The application SHALL allow selecting an establishment marker from its own catalogue with a valid catalogue identifier and SHALL load its details. Selection SHALL be limited to points of interest available from the current map presentation; the app SHALL NOT claim an exhaustive catalogue of all establishments.
+The application SHALL allow selecting an establishment marker from the injected establishment repository with a valid returned identifier and SHALL load its details. Selection SHALL be limited to points of interest available from the current map presentation; the app SHALL NOT claim an exhaustive catalogue of all establishments.
 
 #### Scenario: Select a place
 - **WHEN** the user taps a selectable establishment on the map
@@ -42,7 +42,7 @@ The application SHALL allow selecting an establishment marker from its own catal
 - **THEN** no establishment details request is made
 
 ### Requirement: Partial overlay establishment card
-The application SHALL show a dismissible lower card above the map with the selected establishment's name, one photo and its editorial catalogue description when available. In its normal presentation the card SHALL occupy at most half of the usable screen height, keep the uncovered map interactive, support scrolling its content and respect safe areas and text accessibility. The card SHALL allow future information or actions without changing the map navigation flow.
+The application SHALL show a dismissible lower card above the map with the selected establishment's name, one photo and its supplied description when available. In its normal presentation the card SHALL occupy at most half of the usable screen height, keep the uncovered map interactive, support scrolling its content and respect safe areas and text accessibility. The card SHALL allow future information or actions without changing the map navigation flow.
 
 #### Scenario: Details available
 - **WHEN** the selected establishment's details load
@@ -57,14 +57,14 @@ The application SHALL show a dismissible lower card above the map with the selec
 - **THEN** the card content scrolls while the uncovered map remains available
 
 ### Requirement: Partial data and photo attribution
-The application SHALL display a neutral image placeholder when a photo is missing or fails and SHALL display Descripción no disponible when the catalogue supplies no description. It SHALL NOT invent descriptions. Provider and photo author attributions SHALL be shown where required and map attribution SHALL remain unobscured.
+The application SHALL display a neutral image placeholder when a photo is missing or fails and SHALL display Descripción no disponible when the repository supplies no description. It SHALL NOT invent descriptions. Provider and photo author attributions SHALL be shown where required and map attribution SHALL remain unobscured.
 
 #### Scenario: No optional data
 - **WHEN** details contain a name but no photo or description
 - **THEN** the name, image placeholder and Descripción no disponible appear
 
 #### Scenario: Photo supplied with attribution
-- **WHEN** a catalogue photo with author attribution is shown
+- **WHEN** a place photo with author attribution is shown
 - **THEN** the attribution is displayed with the photo
 
 ### Requirement: Loading failure and selection consistency
@@ -82,25 +82,25 @@ The application SHALL show loading and actionable Spanish errors inside the card
 - **WHEN** the card is closed before the request completes
 - **THEN** its response does not reopen the card
 
-### Requirement: Map without billing and own establishment catalogue
-The application SHALL render MapLibre on iOS and Android using OpenFreeMap without Google Maps/Places credentials or a billing account. It SHALL obtain selectable places, descriptions and credited local photos through an injected catalogue repository. It SHALL NOT query Google Places. The initial catalogue SHALL contain two sourced Madrid establishments and SHALL be editable in the project. Base-map POIs outside the catalogue SHALL NOT open misleading or invented details. A readable Spanish map loading failure SHALL offer retry and preserve sign out and catalogue access.
+### Requirement: Map without billing and injected establishment data
+The application SHALL render MapLibre on iOS and Android using OpenFreeMap without Google Maps/Places credentials or a billing account. It SHALL obtain selectable places, available descriptions and credited photographs through an injected establishment repository. It SHALL NOT query Google Places. The active OSM discovery and image associations SHALL follow the osm-establishments capability. Base-map POIs absent from the returned places SHALL NOT open misleading or invented details. A readable Spanish map loading failure SHALL offer retry and preserve sign out and access to already loaded places.
 
 #### Scenario: No Google credentials
 - **WHEN** the app is built with no Maps keys or Places URLs
-- **THEN** the native map can load from OpenFreeMap and catalogue fichas are available
+- **THEN** the native map can load from OpenFreeMap and returned establishment cards are available
 
-#### Scenario: Catalogue photo and description
-- **WHEN** the user selects a catalogue marker or its accessible list button
-- **THEN** the same owned identifier loads editorial details and a local photo with its credits
+#### Scenario: Establishment photo and description
+- **WHEN** the user selects a returned marker or its accessible list button
+- **THEN** the same returned identifier loads its available details and associated photograph with its credits
 
 #### Scenario: Map provider unreachable
 - **WHEN** the map style fails to load
-- **THEN** a Spanish error and map retry appear while catalogue fichas and sign out remain available
+- **THEN** a Spanish error and map retry appear while already loaded establishment cards and sign out remain available
 
-#### Scenario: Empty catalogue
-- **WHEN** the catalogue contains no establishments
+#### Scenario: Empty establishment results
+- **WHEN** the repository returns no establishments
 - **THEN** an explicit empty message appears and the map remains usable
 
 #### Scenario: Unknown place or mismatched photo
-- **WHEN** a request refers to a place absent from the catalogue or a photo belonging to another place
+- **WHEN** a request refers to a place absent from the returned establishments or a photo belonging to another place
 - **THEN** the repository rejects it without a provider request

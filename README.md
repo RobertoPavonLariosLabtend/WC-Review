@@ -95,4 +95,4 @@ La actualización OAuth también se ha compilado, instalado y abierto como APK d
 
 `npm audit` informa de 36 avisos en la app (10 moderados y 26 altos). No se han aplicado cambios forzados de versión que rompan la compatibilidad del SDK.
 
-La verificación del mapa se registra en [verification.md](openspec/changes/add-main-map-screen/verification.md). Las comprobaciones locales no acreditan la interacción nativa con MapLibre/OpenFreeMap ni sustituyen la aceptación en ambas plataformas.
+La verificación del mapa se registra en [verification.md](openspec/changes/archive/2026-10-07-add-main-map-screen/verification.md). El cambio se archivó por petición del usuario con la aceptación nativa completa pendiente; las comprobaciones locales no sustituyen esa aceptación en ambas plataformas.
