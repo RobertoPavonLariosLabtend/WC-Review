@@ -1,6 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
+import { Link } from 'expo-router';
+import { styles } from './auth-styles';
 import { useRef, useState } from 'react';
-import { ActivityIndicator, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Keyboard, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from './AuthProvider';
 import { authErrorMessage, isAuthCancellation } from './auth-errors';
@@ -68,38 +70,11 @@ export default function LoginScreen() {
               {pending === 'google' ? <ActivityIndicator color="#2563eb" /> : <><Ionicons name="logo-google" size={20} color="#2563eb" /><Text style={styles.socialText}>Continuar con Google</Text></>}
             </Pressable>
             {!googleAvailable && <Text style={styles.unavailable}>Google estará disponible próximamente.</Text>}
-            <Text style={styles.footer}>Tu cuenta, siempre contigo.</Text>
+            <Text style={styles.footer}>¿No tienes cuenta?</Text>
+            <Link href="/register" asChild><Pressable accessibilityRole="button" accessibilityLabel="Crear una cuenta" disabled={!!pending} style={styles.link}><Text style={styles.linkText}>Crear cuenta</Text></Pressable></Link>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  screen: { flex: 1, backgroundColor: '#f8fafc' },
-  content: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 28, paddingVertical: 32 },
-  container: { width: '100%', maxWidth: 440, alignSelf: 'center', gap: 12 },
-  brand: { width: 64, height: 64, borderRadius: 20, backgroundColor: '#2563eb', justifyContent: 'center', alignItems: 'center', alignSelf: 'center', marginBottom: 4 },
-  brandText: { color: '#ffffff', fontSize: 25, fontWeight: '800', letterSpacing: -1 },
-  brandName: { textAlign: 'center', color: '#2563eb', letterSpacing: 3, fontSize: 12, fontWeight: '700', marginBottom: 16 },
-  title: { color: '#0f172a', fontSize: 29, fontWeight: '700', textAlign: 'center', letterSpacing: -0.7 },
-  subtitle: { color: '#64748b', fontSize: 16, textAlign: 'center', marginBottom: 16 },
-  form: { gap: 12 },
-  label: { color: '#334155', fontSize: 14, fontWeight: '600', marginTop: 4 },
-  inputContainer: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 56, borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 14, backgroundColor: '#ffffff', paddingHorizontal: 16 },
-  input: { flex: 1, fontSize: 16, color: '#0f172a', paddingVertical: 16 },
-  primary: { marginTop: 8, borderRadius: 14, backgroundColor: '#2563eb', minHeight: 56, padding: 16, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 10 },
-  primaryText: { fontSize: 16, color: '#ffffff', fontWeight: '700' },
-  dimmed: { opacity: 0.5 },
-  divider: { flexDirection: 'row', alignItems: 'center', gap: 16, marginVertical: 16 },
-  line: { height: 1, flex: 1, backgroundColor: '#e2e8f0' },
-  dividerText: { color: '#94a3b8', fontSize: 13 },
-  social: { borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 14, minHeight: 56, backgroundColor: '#ffffff', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 12, padding: 16 },
-  socialText: { color: '#334155', fontWeight: '600', fontSize: 16 },
-  unavailable: { color: '#64748b', textAlign: 'center', fontSize: 12, marginBottom: 4 },
-  errorBox: { backgroundColor: '#fef2f2', borderRadius: 10, padding: 12, flexDirection: 'row', gap: 8, alignItems: 'center' },
-  error: { color: '#b91c1c', fontSize: 14, flex: 1, lineHeight: 20 },
-  footer: { color: '#94a3b8', textAlign: 'center', fontSize: 12, marginTop: 20 },
-});
