@@ -45,13 +45,13 @@ En Firebase Console → Authentication → Sign-in method, habilita los métodos
 
 Activa **Email/Password**. La pantalla permite acceder a cuentas existentes; puedes crear una cuenta propia desde Authentication → Users → Add user. Este cambio no incluye formulario de registro ni recuperación de contraseña.
 
-### Google: configuración pendiente
+### Google: configuración OAuth incorporada
 
-El plist actualizado ya incluye `CLIENT_ID` y `REVERSED_CLIENT_ID`. El archivo Android todavía no incluye el cliente OAuth web (`client_type: 3`) necesario para el intercambio de token configurado; por eso Google sigue deshabilitado hasta recibir el JSON actualizado.
+Los archivos actualizados incluyen `CLIENT_ID` y `REVERSED_CLIENT_ID` para iOS y el cliente OAuth web (`client_type: 3`) para Android. La app resuelve los IDs automáticamente y habilita Google en ambas plataformas. El acceso real requiere que el proveedor Google esté activo en Firebase y que Android tenga registrada la huella de la firma utilizada.
 
 1. Habilita **Google** en Firebase Authentication.
 2. En Project settings → Your apps, configura los certificados SHA-1 y SHA-256 de las firmas Android que vayas a usar. Usa el certificado de desarrollo para pruebas locales y el certificado de Play App Signing para la versión distribuida.
-3. Descarga de nuevo `google-services.json` y sustituye el de `config/firebase/`. El plist iOS ya está actualizado.
+3. Si cambias la configuración en Firebase, descarga de nuevo los archivos afectados y sustituye los de `config/firebase/`.
 4. El plist iOS debe incluir `CLIENT_ID` y `REVERSED_CLIENT_ID`. El cliente Android correspondiente a `com.wcreview.app` debe incluir un cliente OAuth de tipo 3, usado como `webClientId`.
 5. Regenera y recompila. Una recarga de JavaScript no incorpora cambios de configuración nativa:
 
@@ -85,6 +85,6 @@ Los directorios `ios/` y `android/` son generados e ignorados por Git. Modifica 
 
 Las 8 pruebas de lógica, lint, TypeScript, compatibilidad Expo, los 21 controles de Expo Doctor y la exportación de bundles iOS/Android pasan. La compilación iOS Release se completó con cero errores y tres advertencias. Los resultados de compilación, comprobación visual y límites de las pruebas están en [verification.md](openspec/changes/archive/2026-10-07-add-firebase-auth/verification.md).
 
-La exportación Android no equivale a generar un APK. El éxito de login, la persistencia y el logout con una cuenta real deben comprobarse con cuentas propias después de habilitar los proveedores. Durante este trabajo no se crean cuentas en el proyecto Firebase.
+La actualización OAuth también se ha compilado, instalado y abierto como APK de desarrollo Android. Consulta [la verificación OAuth](docs/verification/google-oauth.md). El éxito de login, la persistencia y el logout con una cuenta real deben comprobarse con cuentas propias después de habilitar los proveedores. Durante este trabajo no se crean cuentas en el proyecto Firebase.
 
 `npm audit` informa de 35 avisos de dependencias (10 moderados y 25 altos). No se han aplicado cambios forzados de versión que rompan la compatibilidad del SDK.
