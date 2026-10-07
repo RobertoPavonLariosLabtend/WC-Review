@@ -1,7 +1,7 @@
 import { INITIAL_PLACE_BOUNDS, MAX_PLACES, mainError, validatePlaceBounds, type DisplayPhoto, type PlaceBounds, type PlacesRepository } from '../domain/models.ts';
 import { mapOsmElement, type OsmRecord } from './osm-mapping.ts';
 import { checkSignal, providerJson, type ProviderFetch } from './provider-http.ts';
-import { loadCommonsPhoto } from './commons-photo.ts';
+import { resolveOsmPhoto } from './commons-photo.ts';
 
 const ENDPOINT = 'https://overpass-api.de/api/interpreter';
 const CACHE_TTL = 5 * 60 * 1000;
@@ -60,12 +60,13 @@ export function createOverpassPlacesRepository({ fetcher = fetch, now = Date.now
     async getPhoto(placeId, photo, signal) {
       checkSignal(signal);
       const record = findRecord(placeId);
-      if (!record?.commonsFile || photo.resource !== record.details.photo?.resource) throw mainError('invalid-selection');
-      let result = photos.get(record.commonsFile);
+      if (!record?.photoSource || photo.resource !== record.details.photo?.resource) throw mainError('invalid-selection');
+      const key = JSON.stringify(record.photoSource);
+      let result = photos.get(key);
       if (!result) {
-        result = await loadCommonsPhoto(record.commonsFile, fetcher, signal);
+        result = await resolveOsmPhoto(record.photoSource, fetcher, signal);
         checkSignal(signal);
-        photos.set(record.commonsFile, result);
+        photos.set(key, result);
         if (photos.size > 32) photos.delete(photos.keys().next().value!);
       }
       return clone(result);

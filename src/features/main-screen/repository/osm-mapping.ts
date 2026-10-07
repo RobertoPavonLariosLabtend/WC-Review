@@ -1,6 +1,15 @@
 import type { EstablishmentDetails, PlaceBounds } from '../domain/models.ts';
 
-export type OsmRecord = { details: EstablishmentDetails; commonsFile?: string };
+export type OsmPhotoSource = { file?: string; category?: string; wikidata?: string };
+export type OsmRecord = { details: EstablishmentDetails; photoSource?: OsmPhotoSource };
+export function commonsFile(value: unknown) {
+  const file = text(value, 240);
+  return file && /^File:[^|\r\n]+\.(jpe?g|png|webp)$/i.test(file) ? file : undefined;
+}
+export function commonsCategory(value: unknown) {
+  const category = text(value, 240);
+  return category && /^Category:[^|\r\n]+$/.test(category) ? category : undefined;
+}
 const categories: Record<string, string> = {
   restaurant: 'Restaurante', cafe: 'Cafetería', bar: 'Bar', pub: 'Pub', fast_food: 'Comida rápida', food_court: 'Zona de restauración',
   fuel: 'Gasolinera', library: 'Biblioteca', cinema: 'Cine', theatre: 'Teatro',
@@ -30,10 +39,13 @@ export function mapOsmElement(value: unknown, bounds: PlaceBounds): OsmRecord | 
   const category = categories[String(tags.amenity ?? tags.tourism)] ?? (tags.shop ? 'Comercio' : 'Establecimiento');
   const street = text(tags['addr:street'], 160), number = text(tags['addr:housenumber'], 30);
   const address = text(tags['addr:full']) ?? ([street && [street, number].filter(Boolean).join(' '), text(tags['addr:postcode'], 20), text(tags['addr:city'], 100)].filter(Boolean).join(', ') || undefined);
-  const commons = text(tags.wikimedia_commons, 240) ?? text(tags.image, 240);
-  const commonsFile = commons && /^File:[^|\r\n]+\.(jpe?g|png|webp)$/i.test(commons) ? commons : undefined;
+  const file = commonsFile(tags.wikimedia_commons) ?? commonsFile(tags.image);
+  const categorySource = commonsCategory(tags.wikimedia_commons);
+  const entity = text(tags.wikidata, 30);
+  const wikidata = entity && /^Q[1-9]\d{0,15}$/.test(entity) ? entity : undefined;
+  const photoSource = file || categorySource || wikidata ? { file, category: categorySource, wikidata } : undefined;
   return {
-    commonsFile,
+    photoSource,
     details: {
       id, name, coordinate: { latitude, longitude }, category, address,
       description: text(tags['description:es']) ?? text(tags.description), openingHours: text(tags.opening_hours),
@@ -44,7 +56,7 @@ export function mapOsmElement(value: unknown, bounds: PlaceBounds): OsmRecord | 
         wheelchair: text(tags['toilets:wheelchair'] ?? (tags.amenity === 'toilets' ? tags.wheelchair : undefined), 60),
         fee: text(tags['toilets:fee'] ?? (tags.amenity === 'toilets' ? tags.fee : undefined), 60),
       },
-      photo: commonsFile ? { resource: `places/${id}/photos/commons`, authors: [] } : undefined,
+      photo: photoSource ? { resource: `places/${id}/photos/commons`, authors: [] } : undefined,
       attributions: [
         { name: 'Datos: © colaboradores de OpenStreetMap', uri: `https://www.openstreetmap.org/${element.type}/${element.id}` },
         { name: 'OpenStreetMap · licencia ODbL', uri: 'https://www.openstreetmap.org/copyright' },

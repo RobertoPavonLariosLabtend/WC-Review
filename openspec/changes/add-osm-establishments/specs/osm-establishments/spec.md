@@ -26,6 +26,14 @@ Each returned point SHALL open a card with its name and available category, addr
 - **WHEN** a place links a supported Commons file with reusable license metadata
 - **THEN** its photograph loads on selection with author, original source and license
 
+#### Scenario: Linked category or Wikidata entity
+- **WHEN** a place links its Commons category or its own Wikidata entity with an image or Commons category
+- **THEN** the app attempts a bounded image lookup through those exact associations and displays a supported reusable photo with original, author and license
+
+#### Scenario: Unassociated business
+- **WHEN** a place has no supported image association
+- **THEN** the app does not substitute a generic brand or nearby business photo and shows that no photo is available
+
 ### Requirement: Controlled reliable network loading
 The app SHALL reuse recent area results, cancel obsolete loads, and show understandable loading, empty, failure and rate-limit states with manual retry. Late responses MUST NOT replace newer searches or a different session. Photo failures MUST NOT hide the place details.
 

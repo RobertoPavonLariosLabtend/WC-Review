@@ -4,7 +4,7 @@ import { INITIAL_PLACE_BOUNDS as bounds, MAX_PLACES } from '../src/features/main
 import { createMainUseCases } from '../src/features/main-screen/use-cases/index.ts';
 import { mapOsmElement } from '../src/features/main-screen/repository/osm-mapping.ts';
 import { createOverpassPlacesRepository, overpassQuery } from '../src/features/main-screen/repository/overpass-places-repository.ts';
-import { loadCommonsPhoto } from '../src/features/main-screen/repository/commons-photo.ts';
+import { loadCommonsPhoto, resolveOsmPhoto } from '../src/features/main-screen/repository/commons-photo.ts';
 import { createPlacesLoader } from '../src/features/main-screen/ui/places-loader.ts';
 
 const signal = () => new AbortController().signal;
@@ -31,7 +31,7 @@ test('OSM nodes/ways/relations map stable IDs and partial factual details withou
 
 test('malformed/off-area OSM elements and arbitrary image/site URLs are rejected or ignored', () => {
   for (const bad of [null, {}, { ...element(), type: 'user' }, { ...element(), id: -1 }, { ...element(), lat: 99 }, { ...element(), lon: NaN }, { ...element(), lat: '40.4168' }, element(1, { name: '' })]) assert.equal(mapOsmElement(bad, bounds), undefined);
-  const info = mapOsmElement(element(1, { website: 'javascript:alert(1)', image: 'https://untrusted.example/photo.jpg', wikimedia_commons: 'Category:Restaurants' }), bounds);
+  const info = mapOsmElement(element(1, { website: 'javascript:alert(1)', image: 'https://untrusted.example/photo.jpg', wikimedia_commons: 'https://untrusted.example/category' }), bounds);
   assert.equal(info.details.website, undefined);
   assert.equal(info.details.photo, undefined);
   assert.equal(mapOsmElement(element(1, { image: 'File:Example.jpg' }), bounds).details.photo.resource, 'places/osm-node-1/photos/commons');
@@ -133,6 +133,85 @@ test('OSM photo lookup is bound to its place and cached only after successful re
   await assert.rejects(repo.getPhoto('osm-node-1', { resource: 'places/other/photos/commons' }, signal()), { code: 'invalid-selection' });
   for (let i = 0; i < 2; i++) await repo.getPhoto('osm-node-1', details.photo, signal());
   assert.equal(photoRequests, 1);
+});
+
+test('OSM retains exact category/entity associations and ignores brand or malformed Wikidata IDs', () => {
+  const mapped = mapOsmElement(element(1, { wikimedia_commons: 'Category:Teatro Alfil (Madrid)', image: 'File:Alfil.jpg', wikidata: 'Q6139590', 'brand:wikidata': 'Q999' }), bounds);
+  assert.deepEqual(mapped.photoSource, { file: 'File:Alfil.jpg', category: 'Category:Teatro Alfil (Madrid)', wikidata: 'Q6139590' });
+  assert.ok(mapped.details.photo);
+  const brand = mapOsmElement(element(2, { 'brand:wikidata': 'Q999', wikidata: 'Q1|Q2' }), bounds);
+  assert.equal(brand.photoSource, undefined);
+  assert.equal(brand.details.photo, undefined);
+});
+
+const statement = (value, rank = 'normal') => ({ rank, mainsnak: { snaktype: 'value', datavalue: { type: 'string', value } } });
+test('Wikidata P18 resolves the linked entity preferred image and preserves its actual file credit', async () => {
+  const calls = [];
+  const photo = await resolveOsmPhoto({ wikidata: 'Q123' }, async url => {
+    calls.push(url);const params = new URL(url).searchParams;
+    if (new URL(url).hostname === 'www.wikidata.org') {
+      assert.equal(params.get('ids'), 'Q123');
+      return json({ entities: { Q123: { claims: { P18: [statement('Wrong.jpg', 'deprecated'), statement('Other.jpg'), statement('Real.jpg', 'preferred')] } } } });
+    }
+    assert.equal(params.get('titles'), 'File:Real.jpg');
+    return json({ query: { pages: [{ imageinfo: [photoInfo()] }] } });
+  }, signal());
+  assert.equal(calls.length, 2);
+  assert.match(photo.authors[0].uri, /File%3AReal.jpg/);
+});
+
+test('linked Commons category is one bounded metadata request and skips unlicensed/non-raster files', async () => {
+  let calls = 0;
+  const photo = await resolveOsmPhoto({ category: 'Category:Exact place' }, async url => {
+    calls++;const params = new URL(url).searchParams;
+    assert.equal(params.get('generator'), 'categorymembers');
+    assert.equal(params.get('gcmtitle'), 'Category:Exact place');
+    assert.equal(params.get('gcmtype'), 'file');
+    assert.equal(params.get('gcmlimit'), '6');
+    return json({ query: { pages: [
+      { title: 'File:Logo.svg', imageinfo: [photoInfo()] },
+      { title: 'File:Unlicensed.jpg', imageinfo: [{ ...photoInfo(), extmetadata: {} }] },
+      { title: 'File:Facade.jpg', imageinfo: [photoInfo()] },
+    ] } });
+  }, signal());
+  assert.equal(calls, 1);
+  assert.match(photo.authors[0].uri, /Facade.jpg/);
+});
+
+test('missing direct image falls through entity P373 category without searching by name', async () => {
+  const calls = [];
+  const photo = await resolveOsmPhoto({ file: 'File:Missing.jpg', wikidata: 'Q123' }, async url => {
+    calls.push(url);const params = new URL(url).searchParams;
+    if (params.get('titles')) return json({ query: { pages: [{ missing: true }] } });
+    if (params.get('ids')) return json({ entities: { Q123: { claims: { P373: [statement('Exact place')] } } } });
+    assert.equal(params.get('gcmtitle'), 'Category:Exact place');
+    return json({ query: { pages: [{ title: 'File:Photo.jpg', imageinfo: [photoInfo()] }] } });
+  }, signal());
+  assert.equal(calls.length, 3);
+  assert.ok(calls.every(url => !new URL(url).searchParams.has('search')));
+  assert.match(photo.authors[0].uri, /Photo.jpg/);
+});
+
+test('photo lookup abort/throttling stop fallbacks; unassociated places never issue image queries', async () => {
+  for (const status of [429, 406]) {
+    let calls = 0;
+    await assert.rejects(resolveOsmPhoto({ file: 'File:Test.jpg', category: 'Category:Place', wikidata: 'Q123' }, async () => { calls++;return json({}, status); }, signal()), { code: 'rate-limit' });
+    assert.equal(calls, 1);
+  }
+  const controller = new AbortController();let calls = 0;
+  await assert.rejects(resolveOsmPhoto({ wikidata: 'Q123', category: 'Category:Place' }, async () => { calls++;controller.abort();return json({}); }, controller.signal), { name: 'AbortError' });
+  assert.equal(calls, 1);
+  await assert.rejects(resolveOsmPhoto({}, async () => { throw new Error('Must not fetch'); }, signal()), { code: 'unavailable' });
+});
+
+test('category photo is cached by complete association, without cross-place name matches', async () => {
+  let calls = 0;
+  const repo = createOverpassPlacesRepository({ fetcher: async url => url.includes('overpass') ? json({ elements: [element(1, { wikimedia_commons: 'Category:Alfil' }), element(2, { wikimedia_commons: 'Category:Different' })] }) : (calls++, json({ query: { pages: [{ title: 'File:Photo.jpg', imageinfo: [photoInfo()] }] } })) });
+  await repo.listPlaces(signal());
+  for (const id of ['osm-node-1', 'osm-node-1', 'osm-node-2']) {
+    const details = await repo.getDetails(id, signal());await repo.getPhoto(id, details.photo, signal());
+  }
+  assert.equal(calls, 2);
 });
 
 test('area loader ignores old results, preserves points on failure and cancels session disposal', async () => {
