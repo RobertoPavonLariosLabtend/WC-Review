@@ -1,32 +1,24 @@
 schema: spec-driven
 
-# Project context (optional)
-# This is shown to AI when creating artifacts.
-# Add your tech stack, conventions, style guides, domain knowledge, etc.
-# Example:
-#   context: |
-#     Tech stack: TypeScript, React, Node.js
-#     We use conventional commits
-#     Domain: e-commerce platform
+context: |
+  WC Review uses Expo 57, React Native, TypeScript and Expo Router.
+  Read AGENTS.md, docs/architecture.md and CONTRIBUTING.md.
+  Every feature lives in src/features/<feature>/ with ui/, domain/, use-cases/ and repository/.
+  UI invokes injected use cases; cases depend on domain models and repository contracts.
+  Concrete repositories isolate SDKs and map responses to plain domain models.
+  src/composition/ wires implementations. src/app/ contains route adapters and guards.
+  Current features are auth and counter. Login supports email/password and Google; Apple is removed.
+  main is production integration. Use feature/, fix/ or chore/ branches from main, without develop.
+  Use conventional commits and merge only after relevant verification. Preserve unrelated local edits.
+  Run npm test and npm run check; export mobile bundles for app changes and build affected native platforms for native changes.
+  Do not claim live authentication success from tests or compilation.
+  Pure refactors with unchanged behavior declare skip_specs: true.
 
-# Per-artifact rules (optional)
-# Add custom rules for specific artifacts.
-# Example:
-#   rules:
-#     proposal:
-#       - Keep proposals under 500 words
-#       - Always include a "Non-goals" section
-#     tasks:
-#       - Break tasks into chunks of max 2 hours
-
-# Per-operation guidance (optional)
-# Add advisory guidance for how apply and archive work should be conducted.
-# This is separate from artifact rules above.
-# Example:
-#   operations:
-#     apply:
-#       guidance:
-#         - Keep test summaries concise
-#     archive:
-#       guidance:
-#         - Summarize the archive outcome before finishing
+rules:
+  proposal:
+    - Identify the features affected and the requested behavior changes.
+  design:
+    - Describe domain contracts, use cases, repository adapters, UI and composition wiring.
+    - Keep frameworks and SDKs outside domain/use-cases and concrete repositories outside UI.
+  tasks:
+    - Include relevant use-case and architecture-boundary checks, documentation and feature-branch delivery.
