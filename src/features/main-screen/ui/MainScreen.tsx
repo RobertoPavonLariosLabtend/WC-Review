@@ -1,21 +1,22 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../auth/ui/AuthProvider';
 import type { MainUseCases } from '../use-cases';
 import { EstablishmentCard } from './EstablishmentCard';
 import { createSelectionLoader, type SelectionState } from './selection-loader';
-import type { PlaceSelection } from '../domain/models';
+import { INITIAL_PLACE_BOUNDS, MAX_PLACES, type PlaceBounds, type PlaceSelection } from '../domain/models';
 import { EstablishmentMap, type EstablishmentMapHandle } from './EstablishmentMap';
+import { createPlacesLoader, type PlacesState } from './places-loader';
 export default function MainScreen({ useCases }: { useCases: MainUseCases }) {
   const { user, useCases: auth } = useAuth();
   const insets = useSafeAreaInsets();
   const map = useRef<EstablishmentMapHandle>(null);
   const [size, setSize] = useState({ height: 0, header: 0, catalogue: 0, notice: 0 });
-  const [places, setPlaces] = useState<PlaceSelection[]>([]);
-  const [catalogueLoading, setCatalogueLoading] = useState(true);
-  const [catalogueError, setCatalogueError] = useState(false);
-  const [catalogueAttempt, setCatalogueAttempt] = useState(0);
+  const [{ places, loading: catalogueLoading, error: catalogueError }, setPlacesState] = useState<PlacesState>({ places: [], loading: true });
+  const [placesLoader] = useState(() => createPlacesLoader(useCases, setPlacesState));
+  const visibleBounds = useRef<PlaceBounds>(INITIAL_PLACE_BOUNDS);
+  const searchedBounds = useRef<PlaceBounds>(INITIAL_PLACE_BOUNDS);
   const [mapStatus, setMapStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [mapAttempt, setMapAttempt] = useState(0);
   const [state, setState] = useState<SelectionState>(null);
@@ -26,16 +27,9 @@ export default function MainScreen({ useCases }: { useCases: MainUseCases }) {
   const locationGeneration = useRef(0);
   useEffect(() => () => { loader.dispose(); locationGeneration.current++; }, [loader]);
   useEffect(() => {
-    const controller = new AbortController();
-    void useCases.listPlaces(controller.signal).then(items => {
-      if (!controller.signal.aborted) setPlaces(items);
-    }).catch(() => {
-      if (!controller.signal.aborted) setCatalogueError(true);
-    }).finally(() => {
-      if (!controller.signal.aborted) setCatalogueLoading(false);
-    });
-    return () => controller.abort();
-  }, [useCases, catalogueAttempt]);
+    void placesLoader.search(INITIAL_PLACE_BOUNDS);
+    return () => placesLoader.dispose();
+  }, [placesLoader]);
   const noticeVisible = message !== '' || mapStatus !== 'ready';
   const overlayBottom = insets.top + size.header + size.catalogue + 32 + (noticeVisible ? size.notice + 12 : 0);
   const cardHeight = Math.max(0, Math.min((size.height - insets.top - insets.bottom) * 0.5, size.height - overlayBottom - insets.bottom - 120));
@@ -44,11 +38,17 @@ export default function MainScreen({ useCases }: { useCases: MainUseCases }) {
   function select(place: PlaceSelection) {
     if (!signingOut) void loader.select(place).catch(() => {});
   }
+  function search(bounds: PlaceBounds) {
+    if (signingOut || catalogueLoading) return;
+    loader.clear();
+    searchedBounds.current = { ...bounds };
+    void placesLoader.search(searchedBounds.current);
+  }
   async function signOut() {
     if (signingOut) return;
-    loader.clear(); locationGeneration.current++; setLocating(false); setSigningOut(true); setMessage('');
+    loader.clear(); placesLoader.dispose(); locationGeneration.current++; setLocating(false); setSigningOut(true); setMessage('');
     try { await auth.logout(); }
-    catch { setMessage('No se pudo cerrar sesión. Vuelve a intentarlo.'); }
+    catch { setMessage('No se pudo cerrar sesión. Vuelve a intentarlo.'); void placesLoader.search(searchedBounds.current); }
     finally { setSigningOut(false); }
   }
   async function locate() {
@@ -67,7 +67,8 @@ export default function MainScreen({ useCases }: { useCases: MainUseCases }) {
     setSize(value => value.height === height ? value : { ...value, height });
   }}>
     <EstablishmentMap key={mapAttempt} ref={map} places={places} selected={state?.selection} padding={padding}
-      onSelect={select} onReady={() => setMapStatus('ready')} onError={() => setMapStatus('error')} />
+      onSelect={select} onReady={() => setMapStatus('ready')} onError={() => setMapStatus('error')}
+      onBoundsChange={bounds => { visibleBounds.current = bounds; }} />
     <View style={[styles.header, { top: insets.top + 8 }]} onLayout={event => {
       const { height } = event.nativeEvent.layout;
       setSize(value => value.header === height ? value : { ...value, header: height });
@@ -79,10 +80,20 @@ export default function MainScreen({ useCases }: { useCases: MainUseCases }) {
       const { height } = event.nativeEvent.layout;
       setSize(value => value.catalogue === height ? value : { ...value, catalogue: height });
     }}>
-      <Text style={styles.hint}>Establecimientos de WC Review · toca un punto azul</Text>
-      {catalogueLoading ? <ActivityIndicator accessibilityLabel="Cargando establecimientos" /> : catalogueError ? <Pressable accessibilityRole="button" onPress={() => { setCatalogueLoading(true); setCatalogueError(false); setCatalogueAttempt(value => value + 1); }} style={styles.button}><Text style={styles.link}>Reintentar establecimientos</Text></Pressable> : places.length ? <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.choices}>
-        {places.map(place => <Pressable key={place.placeId} accessibilityRole="button" accessibilityState={{ selected: state?.selection.placeId === place.placeId }} disabled={signingOut} onPress={() => select(place)} style={styles.choice}><Text style={styles.link}>{place.name}</Text></Pressable>)}
-      </ScrollView> : <Text style={styles.body}>Todavía no hay establecimientos disponibles.</Text>}
+      <Text style={styles.hint}>OpenStreetMap · {places.length} sitios · toca un punto azul</Text>
+      <Pressable accessibilityRole="button" disabled={catalogueLoading || signingOut || mapStatus !== 'ready'} onPress={() => search(visibleBounds.current)} style={styles.button}><Text style={styles.link}>Buscar en esta zona</Text></Pressable>
+      {catalogueLoading && <ActivityIndicator accessibilityLabel="Cargando establecimientos" />}
+      {catalogueError && <>
+        <Text accessibilityRole="alert" style={styles.body}>{catalogueError === 'area-too-large' ? 'Acerca el mapa para buscar en una zona más pequeña.' : catalogueError === 'rate-limit' ? 'Espera un minuto antes de volver a buscar.' : 'No se pudieron cargar los sitios. Comprueba tu conexión y reintenta.'}</Text>
+        <Pressable accessibilityRole="button" disabled={signingOut || catalogueLoading} onPress={() => search(searchedBounds.current)} style={styles.button}><Text style={styles.link}>Reintentar establecimientos</Text></Pressable>
+      </>}
+      {places.length > 0 && <FlatList horizontal data={places} keyExtractor={place => place.placeId}
+        initialNumToRender={8} maxToRenderPerBatch={8} windowSize={3} style={styles.list}
+        showsHorizontalScrollIndicator={false} contentContainerStyle={styles.choices}
+        extraData={[state?.selection.placeId, signingOut, catalogueLoading]}
+        renderItem={({ item: place }) => <Pressable accessibilityRole="button" accessibilityState={{ selected: state?.selection.placeId === place.placeId }} disabled={signingOut || catalogueLoading} onPress={() => select(place)} style={styles.choice}><Text style={styles.link}>{place.name}</Text></Pressable>} />}
+      {!catalogueLoading && !catalogueError && !places.length && <Text style={styles.body}>No hay sitios registrados en esta zona. Prueba otra zona.</Text>}
+      {places.length >= MAX_PLACES && <Text style={styles.hint}>Hasta {MAX_PLACES} sitios por búsqueda. Acerca el mapa para ver más detalle.</Text>}
     </View>
     {noticeVisible && <View style={[styles.notice, { top: insets.top + size.header + size.catalogue + 32 }]} onLayout={event => {
       const { height } = event.nativeEvent.layout;
@@ -103,6 +114,7 @@ const styles = StyleSheet.create({
   link: { color: '#2563eb', fontWeight: '600', fontSize: 16 }, body: { color: '#475569', fontSize: 16, lineHeight: 24 },
   catalogue: { position: 'absolute', left: 12, right: 12, padding: 8, borderRadius: 12, backgroundColor: '#fff' },
   hint: { fontSize: 12, color: '#475569' }, choices: { gap: 8 },
+  list: { flexGrow: 0 },
   choice: { minHeight: 48, justifyContent: 'center', paddingHorizontal: 8 },
   notice: { position: 'absolute', left: 12, right: 12, backgroundColor: '#fff', borderRadius: 12, padding: 12 },
   location: { position: 'absolute', right: 16, backgroundColor: '#fff', paddingHorizontal: 16, minHeight: 48, justifyContent: 'center', borderRadius: 16 },

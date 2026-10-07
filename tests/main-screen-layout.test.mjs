@@ -27,7 +27,7 @@ function renderMainScreen() {
       },
     },
     'react-native': {
-      View: 'View', Text: 'Text', Pressable: 'Pressable', ScrollView: 'ScrollView', ActivityIndicator: 'ActivityIndicator',
+      View: 'View', Text: 'Text', Pressable: 'Pressable', FlatList: 'FlatList', ActivityIndicator: 'ActivityIndicator',
       StyleSheet: { create: styles => styles, absoluteFill: {} },
     },
     './EstablishmentMap': { EstablishmentMap: 'EstablishmentMap' },
@@ -35,6 +35,8 @@ function renderMainScreen() {
     '../../auth/ui/AuthProvider': { useAuth: () => ({ user: { id: 'user' }, useCases: {} }) },
     './EstablishmentCard': { EstablishmentCard: 'EstablishmentCard' },
     './selection-loader': { createSelectionLoader: () => ({}) },
+    './places-loader': { createPlacesLoader: () => ({}) },
+    '../domain/models': { INITIAL_PLACE_BOUNDS: { south: 40.409, west: -3.714, north: 40.425, east: -3.694 }, MAX_PLACES: 300 },
   };
   const { outputText } = ts.transpileModule(readFileSync('src/features/main-screen/ui/MainScreen.tsx', 'utf8'), {
     compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX },

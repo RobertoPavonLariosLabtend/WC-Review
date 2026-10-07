@@ -1,17 +1,18 @@
 import { useEffect, useImperativeHandle, useMemo, useRef, type Ref } from 'react';
 import { Camera, GeoJSONSource, Layer, Map, type CameraRef } from '@maplibre/maplibre-react-native';
 import { StyleSheet } from 'react-native';
-import type { Coordinates, PlaceSelection } from '../domain/models';
+import type { Coordinates, PlaceSelection, PlaceBounds } from '../domain/models';
 
 export type EstablishmentMapHandle = { centerOn(coordinate: Coordinates): void };
 type Props = {
   ref?: Ref<EstablishmentMapHandle>; places: PlaceSelection[]; selected?: PlaceSelection;
   padding: { top: number; bottom: number; left: number; right: number };
   onSelect(place: PlaceSelection): void; onReady(): void; onError(): void;
+  onBoundsChange(bounds: PlaceBounds): void;
 };
 const INITIAL = { center: [-3.7038, 40.4168] as [number, number], zoom: 14.5 };
 
-export function EstablishmentMap({ ref, places, selected, padding, onSelect, onReady, onError }: Props) {
+export function EstablishmentMap({ ref, places, selected, padding, onSelect, onReady, onError, onBoundsChange }: Props) {
   const camera = useRef<CameraRef>(null);
   useImperativeHandle(ref, () => ({
     centerOn: coordinate => camera.current?.easeTo({ center: [coordinate.longitude, coordinate.latitude], zoom: 16, duration: 250 }),
@@ -31,7 +32,11 @@ export function EstablishmentMap({ ref, places, selected, padding, onSelect, onR
     attribution attributionPosition={{ bottom: padding.bottom, left: 12 }}
     logoPosition={{ bottom: padding.bottom, left: 44 }}
     compassPosition={{ top: padding.top, right: 12 }}
-    onDidFinishLoadingStyle={onReady} onDidFailLoadingMap={onError}>
+    onDidFinishLoadingStyle={onReady} onDidFailLoadingMap={onError}
+    onRegionDidChange={event => {
+      const [west, south, east, north] = event.nativeEvent.bounds;
+      onBoundsChange({ west, south, east, north });
+    }}>
     <Camera ref={camera} initialViewState={INITIAL} padding={padding} />
     <GeoJSONSource id="wc-establishments" data={data} onPress={event => {
       const id = event.nativeEvent.features[0]?.properties?.placeId;

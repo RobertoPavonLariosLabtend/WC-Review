@@ -2,6 +2,8 @@ import { useState, type ReactNode } from 'react';
 import { ActivityIndicator, Image, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { Attribution } from '../domain/models';
 import type { SelectionState } from './selection-loader';
+const tagLabels: Record<string, string> = { yes: 'Sí', no: 'No', limited: 'Limitado', customers: 'Solo clientes', permissive: 'Permitido', private: 'Privado', public: 'Público', designated: 'Adaptado' };
+function tagLabel(value?: string) { return value ? tagLabels[value] ?? value : 'Sin datos'; }
 function Credits({ items }: { items: Attribution[] }) {
   return <>{items.map((item, index) => <Text key={`${item.name}-${index}`} accessibilityRole={item.uri ? 'link' : 'text'} onPress={item.uri?.startsWith('https://') ? () => { void Linking.openURL(item.uri!).catch(() => {}); } : undefined} style={styles.credit}>{item.name}</Text>)}</>;
 }
@@ -20,8 +22,17 @@ export function EstablishmentCard({ state, height, close, retry, children }: { s
       </View> : <>
         {photo && !imageFailed ? <Image accessibilityLabel={`Foto de ${details?.name ?? state.selection.name}`} source={{ uri: photo.uri }} style={styles.image} resizeMode="cover" onError={() => setImageFailed(true)} /> : <View style={[styles.image, styles.placeholder]}>{state.photoLoading ? <ActivityIndicator accessibilityLabel="Cargando foto" /> : <Text style={styles.body}>Foto no disponible</Text>}</View>}
         {photo && !imageFailed && <Credits items={photo.authors} />}
+        {details?.category && <Text style={styles.body}>{details.category}</Text>}
         <Text style={styles.body}>{details?.description ?? 'Descripción no disponible'}</Text>
         {details?.address && <Text style={styles.body}>{details.address}</Text>}
+        {details?.openingHours && <Text style={styles.body}>Horario registrado: {details.openingHours}</Text>}
+        {details?.website && <Credits items={[{ name: 'Web del establecimiento', uri: details.website }]} />}
+        {details?.toilets && <>
+          <Text style={styles.body}>Baño indicado en OSM: {tagLabel(details.toilets.availability)}</Text>
+          {details.toilets.access && <Text style={styles.body}>Acceso al baño: {tagLabel(details.toilets.access)}</Text>}
+          {details.toilets.wheelchair && <Text style={styles.body}>Acceso con silla de ruedas: {tagLabel(details.toilets.wheelchair)}</Text>}
+          {details.toilets.fee && <Text style={styles.body}>Baño de pago: {tagLabel(details.toilets.fee)}</Text>}
+        </>}
         <Credits items={details?.attributions ?? []} />
         {children}
       </>}

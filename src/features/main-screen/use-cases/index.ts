@@ -1,4 +1,4 @@
-import { mainError, type Coordinates, type LocationRepository, type PlacePhoto, type PlaceSelection, type PlacesRepository } from '../domain/models.ts';
+import { mainError, validatePlaceBounds, type PlaceBounds, type Coordinates, type LocationRepository, type PlacePhoto, type PlaceSelection, type PlacesRepository } from '../domain/models.ts';
 
 export function validCoordinates(value: Coordinates) {
   return Number.isFinite(value?.latitude) && Number.isFinite(value?.longitude) && Math.abs(value.latitude) <= 90 && Math.abs(value.longitude) <= 180;
@@ -6,8 +6,9 @@ export function validCoordinates(value: Coordinates) {
 export function validPlaceId(value: string) { return typeof value === 'string' && /^[A-Za-z0-9_-]{1,256}$/.test(value); }
 export function createMainUseCases(places: PlacesRepository, location: LocationRepository) {
   return {
-    async listPlaces(signal: AbortSignal) {
-      const selections = await places.listPlaces(signal);
+    async listPlaces(signal: AbortSignal, bounds?: PlaceBounds) {
+      if (bounds) validatePlaceBounds(bounds);
+      const selections = await places.listPlaces(signal, bounds);
       return selections.map(selection => {
         if (!validPlaceId(selection.placeId) || !validCoordinates(selection.coordinate) || !selection.name?.trim()) throw mainError('invalid-selection');
         return { ...selection, name: selection.name.trim() };

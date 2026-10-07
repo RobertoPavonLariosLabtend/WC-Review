@@ -69,14 +69,14 @@ Apple está retirado temporalmente de la app por petición del usuario.
 
 ## Mapa y establecimientos
 
-El mapa utiliza **MapLibre Native + OpenFreeMap**, sin clave ni cuenta de facturación del mapa. Las fichas proceden de un catálogo propio editable en el proyecto; incluye inicialmente Casa Labra y Sobrino de Botín con descripciones y fotografías locales atribuidas. Consulta [compilación y mantenimiento del catálogo](docs/main-map-setup.md). El cambio desde Google requiere un nuevo development build. No existe editor móvil ni descarga automática de fotos de todos los comercios.
+El mapa utiliza **MapLibre Native + OpenFreeMap**, sin clave ni cuenta de facturación del mapa. Los establecimientos y fichas se obtienen de **OpenStreetMap mediante Overpass**: hasta 300 por búsqueda, inicialmente en Madrid y después con «Buscar en esta zona». Las fotos Commons enlazadas se cargan al abrir la ficha, con autor/licencia; fotos y descripciones dependen de los datos disponibles. Consulta [configuración del mapa y datos OSM](docs/main-map-setup.md). El cambio desde Google requiere un nuevo development build; añadir estas consultas OSM al binario MapLibre existente solo requiere actualizar JavaScript. No existe editor móvil.
 
 ## Estructura
 
 La app está organizada por feature con Clean Architecture. Cada feature contiene `ui`, `domain`, `use-cases` y `repository`. La UI usa casos de uso; estos dependen de contratos, y las implementaciones se inyectan desde `src/composition/`.
 
 - `src/features/auth/`: login email/Google, registro por email, sesión y logout.
-- `src/features/main-screen/`: mapa MapLibre, ficha, catálogo propio y ubicación opcional.
+- `src/features/main-screen/`: mapa MapLibre, búsqueda/fichas OSM, fotografías Commons y ubicación opcional.
 - `src/composition/AppProviders.tsx`: conexión de repositorios, casos de uso y UI.
 - `src/app/`: adaptadores de rutas y guards de Expo Router.
 - `app.config.ts` y `config/firebase/`: configuración nativa y OAuth.

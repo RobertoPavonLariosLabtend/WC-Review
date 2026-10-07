@@ -16,7 +16,7 @@ src/
     main-screen/
       domain/                  Selección, coordenadas, detalles, foto y contratos
       use-cases/               Seleccionar, cargar detalles/foto y ubicación opcional
-      repository/              Catálogo editorial/fotos locales y Expo Location
+      repository/              Overpass/Commons, catálogo editorial y Expo Location
       ui/                      Mapa, ficha y cargas con cancelación por generación
 ```
 
@@ -32,7 +32,7 @@ flowchart LR
 
 Los casos de uso reciben el contrato de repositorio como argumento; no crean SDK, no conocen React y no importan la implementación. El dominio contiene modelos propios: `AuthUser` expone `id`, `email` y `displayName`, sin métodos ni tokens de Firebase. El repositorio traduce la respuesta nativa a este modelo.
 
-La UI recibe los casos de uso y gestiona únicamente presentación y estado de pantalla. `AuthProvider` observa la sesión mediante un caso de uso y libera el listener al desmontarse o reintentar. `MainScreenFeature` crea sus dependencias por sesión y remonta al cambiar user.id. El loader de selección invalida las respuestas al cambiar lugar, cerrar, salir o desmontarse. El catálogo no requiere tokens; Firebase Authentication mantiene sus tokens dentro de repository.
+La UI recibe los casos de uso y gestiona únicamente presentación y estado de pantalla. `AuthProvider` observa la sesión mediante un caso de uso y libera el listener al desmontarse o reintentar. `MainScreenFeature` crea sus dependencias por sesión y remonta al cambiar user.id. Los loaders de selección y búsqueda invalidan las respuestas al cambiar lugar/zona, salir o desmontarse. Overpass/Commons no reciben tokens; Firebase Authentication mantiene sus tokens dentro de repository.
 
 `src/app/` declara rutas y guards. Login e índice son adaptadores de una línea a la UI o a su composición. Toda importación de repositorios concretos desde otra capa se concentra en `src/composition/`.
 
@@ -40,4 +40,4 @@ Para añadir una feature, crea sus contratos y modelos en `domain/`, sus operaci
 
 `npm test` verifica reglas de dependencia con el AST de TypeScript, además de probar casos de uso con repositorios falsos. Estas pruebas cubren validación, cancelación, logout, sesión, mapeo de usuarios y selección rápida, cierre, catálogo/fotos locales y aislamiento de cargas entre sesiones. Las pruebas nativas con cuentas reales siguen siendo necesarias para confirmar el login en Firebase.
 
-`main-screen/repository/catalogue.ts` contiene el catálogo propio; `catalog-places-repository.ts` implementa el puerto y `bundled-places-repository.ts` resuelve assets nativos. `listPlaces` obtiene selecciones desde un caso de uso validado. MapLibre Native es presentación en `ui/EstablishmentMap.tsx`, con OpenFreeMap para las teselas. No hay SDK de datos de establecimientos en la UI ni servicio Places/Functions. El catálogo público se distribuye en el bundle y solo sus IDs originan fichas. Consulta [configuración y mantenimiento del catálogo](main-map-setup.md).
+`main-screen/repository/overpass-places-repository.ts` implementa el puerto de establecimientos con consultas por bbox, caché por sesión y cooldown. `osm-mapping.ts` traduce elementos/tags a modelos propios y `commons-photo.ts` resuelve fotos acreditadas; `provider-http.ts` encapsula HTTP, identificación de la app, timeout y abort. `listPlaces` valida bounds y selecciones desde el caso de uso. `ui/places-loader.ts` conserva resultados válidos e ignora respuestas obsoletas. La UI copia bounds del mapa y consulta solo al entrar o pulsar «Buscar en esta zona»; la lista horizontal virtualiza todos los resultados. MapLibre Native es presentación en `ui/EstablishmentMap.tsx`, con OpenFreeMap para las teselas. No hay acceso a proveedores de datos desde UI ni servicio Places/Functions. El catálogo editorial y su adapter siguen disponibles pero no están inyectados en la pantalla. Consulta [configuración del mapa y datos OSM](main-map-setup.md).

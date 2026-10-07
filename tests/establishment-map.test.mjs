@@ -5,7 +5,7 @@ import vm from 'node:vm';
 import ts from 'typescript';
 
 test('MapLibre source selects only catalogue IDs and camera uses longitude/latitude with overlay padding', () => {
-  const movements = [], selected = [], stopped = [];
+  const movements = [], selected = [], stopped = [], bounds = [];
   const reference = { current: null };
   const jsx = (type, props) => ({ type, props });
   const mocks = {
@@ -28,7 +28,7 @@ test('MapLibre source selects only catalogue IDs and camera uses longitude/latit
   const place = { placeId: 'own-id', name: 'Local', coordinate: { longitude: -3.7, latitude: 40.4 } };
   const padding = { top: 150, bottom: 350, left: 12, right: 12 };
   const tree = module.exports.EstablishmentMap({
-    ref: reference, places: [place], selected: place, padding, onSelect: item => selected.push(item), onReady() {}, onError() {},
+    ref: reference, places: [place], selected: place, padding, onSelect: item => selected.push(item), onReady() {}, onError() {}, onBoundsChange: value => bounds.push(value),
   });
   const source = tree.props.children.find(child => child.type === 'Source');
   for (const id of ['base-map-poi', undefined, 'own-id']) {
@@ -42,4 +42,8 @@ test('MapLibre source selects only catalogue IDs and camera uses longitude/latit
   assert.deepEqual(Array.from(movements.at(-1).center), [-4, 41]);
   assert.equal(movements.at(-1).zoom, 16);
   assert.equal(tree.props.attributionPosition.bottom, padding.bottom);
+  const event = { nativeEvent: { bounds: [-4, 40, -3.99, 40.01] } };
+  tree.props.onRegionDidChange(event);
+  event.nativeEvent = null;
+  assert.deepEqual(JSON.parse(JSON.stringify(bounds[0])), { west: -4, south: 40, east: -3.99, north: 40.01 });
 });
