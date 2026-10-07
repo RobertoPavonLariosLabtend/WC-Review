@@ -12,7 +12,7 @@ Fecha: 2026-10-07. Rama propietaria: `feature/main-screen`. Esquema: `spec-drive
 
 ## Comprobaciones locales
 
-- `npm test`: 28/28 pruebas de app, incluidas reglas arquitectónicas, entrada inválida, ubicación opcional, selección rápida, cierre/desmontaje, sesión nueva, error/reintento, fallo de foto y transporte autenticado.
+- `npm test`: 30/30 pruebas de app, incluidas reglas arquitectónicas, entrada inválida, ubicación opcional, selección rápida, cierre/desmontaje, sesión nueva, error/reintento, fallo de foto y transporte autenticado.
 - `npm test --prefix functions`: 7/7 pruebas de servicio. Se ejecutaron también con `npx --yes --package=node@22 node --test functions/tests/*.test.mjs`, 7/7.
 - `npm run check`: lint, TypeScript y versiones Expo compatibles correctos.
 - `npm run check --prefix functions`: sintaxis correcta; el entrypoint Functions se importa localmente sin desplegar.
@@ -30,8 +30,8 @@ Fecha: 2026-10-07. Rama propietaria: `feature/main-screen`. Esquema: `spec-drive
 | --- | --- | --- |
 | Authenticated map and global user | `src/composition/MainScreenFeature.tsx:8`, `src/features/main-screen/ui/MainScreen.tsx:11`, guards existentes de `_layout.tsx` | Casos auth existentes; remount por user.id y loader por sesión. Login y logout con cuenta real siguen pendientes. |
 | Map navigation and optional location | `MainScreen.tsx:9`, `MainScreen.tsx:34`, `repository/expo-location-repository.ts:3` | No petición al montar; validación/denegación en casos de uso. Permisos nativos y centrado real pendientes. |
-| Select visible establishments | `MainScreen.tsx:49`, `use-cases/index.ts:6` | IDs/coordenadas inválidos rechazados antes del proveedor. Solo onPoiClick inicia selección; toque normal no tiene handler de carga. Evento nativo real pendiente. |
-| Partial overlay establishment card | `MainScreen.tsx:22`, `MainScreen.tsx:47`, `ui/EstablishmentCard.tsx:9` | Límite 50%, ScrollView, safe areas, close, extensibilidad por children y padding nativo. Pantalla pequeña, texto grande y cámara/atribución requieren inspección nativa con Maps configurado. |
+| Select visible establishments | `MainScreen.tsx:52`, `use-cases/index.ts:6` | IDs/coordenadas inválidos rechazados antes del proveedor. Solo onPoiClick inicia selección; toque normal no tiene handler de carga. Evento nativo real pendiente. |
+| Partial overlay establishment card | `MainScreen.tsx:22`, `MainScreen.tsx:50`, `ui/EstablishmentCard.tsx:9` | Límite 50%, ScrollView, safe areas, close, extensibilidad por children y padding nativo. Pantalla pequeña, texto grande y cámara/atribución requieren inspección nativa con Maps configurado. |
 | Partial data and photo attribution | `EstablishmentCard.tsx:6`, `functions/src/provider.mjs:8` | Normalización parcial, créditos originales, imagen neutra y descripción ausente. Enlaces/MIME validado; atribución visual real pendiente. |
 | Loading failure and selection consistency | `ui/selection-loader.ts:6`, `MainScreen.tsx:21` | Pruebas de A lenta/B, close y dispose con proveedor que ignora abort, foto tardía, reintento y fallo de foto conservando detalles. |
 | Provider configuration and protected details | `app.config.ts:28`, `repository/service-places-repository.ts:10`, `functions/src/service.mjs:9`, `functions/src/limiter.mjs:3` | Token/revocación, parámetros, pertenencia, límites transaccionales, timeout, MIME/tamaño y errores sin secretos. Firestore/Admin/Google se prueban con dobles, no contra servicios remotos. |
@@ -48,3 +48,9 @@ Fecha: 2026-10-07. Rama propietaria: `feature/main-screen`. Esquema: `spec-drive
 ## Preservación y entrega
 
 El cambio local de `app.json` que añade `appleTeamId` se conserva y se excluye de los commits de esta feature. No se integra ni se hace force push a main. No se suben claves, tokens, directorios generados ni node_modules.
+
+## Corrección del crash onLayout
+
+El log aportado por el usuario mostró `Cannot read property layout of null` y la advertencia de evento sintético liberado. Los dos onLayout de MainScreen leían nativeEvent desde el actualizador funcional de estado, que puede ejecutarse después de liberar el evento. Ahora capturan height dentro del handler y encolan solo el número. Si la medida no cambia, conservan la identidad del estado y evitan renders redundantes.
+
+`tests/main-screen-layout.test.mjs` ejecuta los handlers del componente real con una cola diferida: libera ambos eventos antes de aplicar los updates y verifica que se conservan altura de pantalla y cabecera. Fallaba con el mismo TypeError antes del arreglo; pasa después. También comprueba medidas repetidas. Las 30 pruebas de app, lint, TypeScript y exportaciones iOS/Android pasan. No hay cambios nativos, de configuración o de proveedores en este arreglo. La recarga y aceptación en el dispositivo del usuario siguen pendientes; esta regresión no sustituye 5.2.

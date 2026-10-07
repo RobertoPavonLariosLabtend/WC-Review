@@ -42,7 +42,10 @@ export default function MainScreen({ useCases, mapReady }: { useCases: MainUseCa
       if (generation === locationGeneration.current) setMessage((error as { code?: string }).code === 'location-denied' ? 'Permiso de ubicación denegado. Puedes seguir explorando el mapa.' : 'No se pudo obtener tu ubicación. Puedes seguir explorando el mapa.');
     } finally { if (generation === locationGeneration.current) setLocating(false); }
   }
-  return <View style={styles.screen} onLayout={event => setSize(value => ({ ...value, height: event.nativeEvent.layout.height }))}>
+  return <View style={styles.screen} onLayout={event => {
+    const { height } = event.nativeEvent.layout;
+    setSize(value => value.height === height ? value : { ...value, height });
+  }}>
     {mapReady ? <MapView ref={map} provider={PROVIDER_GOOGLE} style={StyleSheet.absoluteFill} initialRegion={MADRID}
       mapPadding={{ top: size.header + insets.top + 12, bottom: bottom + 12, left: 12, right: 12 }}
       showsMyLocationButton={false} toolbarEnabled={false}
@@ -53,7 +56,10 @@ export default function MainScreen({ useCases, mapReady }: { useCases: MainUseCa
       }}>
       {state && <Marker coordinate={state.selection.coordinate} title={state.selection.name} pinColor="#2563eb" />}
     </MapView> : <View style={styles.unavailable}><Text style={styles.body}>El mapa no está disponible en esta versión. Su configuración está pendiente.</Text></View>}
-    <View style={[styles.header, { top: insets.top + 8 }]} onLayout={event => setSize(value => ({ ...value, header: event.nativeEvent.layout.height }))}>
+    <View style={[styles.header, { top: insets.top + 8 }]} onLayout={event => {
+      const { height } = event.nativeEvent.layout;
+      setSize(value => value.header === height ? value : { ...value, header: height });
+    }}>
       <Text style={styles.user} numberOfLines={2}>{user?.displayName ?? user?.email ?? 'WC Review'}</Text>
       <Pressable accessibilityRole="button" accessibilityLabel="Cerrar sesión" disabled={signingOut} onPress={() => void signOut()} style={styles.button}>{signingOut ? <ActivityIndicator /> : <Text style={styles.link}>Cerrar sesión</Text>}</Pressable>
     </View>
