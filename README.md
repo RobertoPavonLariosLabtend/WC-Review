@@ -69,21 +69,23 @@ Apple está retirado temporalmente de la app por petición del usuario.
 
 ## Estructura
 
-- `app.config.ts`: integración nativa y lectura de los clientes OAuth.
-- `app.json`: identidad y presentación de la app.
-- `src/services/auth/`: servicio y lógica de validación, errores y proveedores.
-- `src/context/AuthProvider.tsx`: observación y restauración de la sesión.
-- `src/app/_layout.tsx`: rutas protegidas que esperan la inicialización.
-- `src/app/login.tsx`: pantalla de acceso.
-- `src/app/index.tsx`: usuario autenticado, contador y logout.
-- `tests/auth.test.mjs`: pruebas de validación, errores, cancelación, disponibilidad Google y token Google.
-- `openspec/changes/add-firebase-auth/`: requisitos, diseño y tareas del cambio.
+La app está organizada por feature con Clean Architecture. Cada feature contiene `ui`, `domain`, `use-cases` y `repository`. La UI usa casos de uso; estos dependen de contratos, y las implementaciones se inyectan desde `src/composition/`.
+
+- `src/features/auth/`: login email/Google, sesión y logout.
+- `src/features/counter/`: pantalla autenticada y contador en memoria.
+- `src/composition/AppProviders.tsx`: conexión de repositorios, casos de uso y UI.
+- `src/app/`: adaptadores de rutas y guards de Expo Router.
+- `app.config.ts` y `config/firebase/`: configuración nativa y OAuth.
+- `tests/`: pruebas de autenticación, casos de uso y reglas arquitectónicas.
+- `openspec/`: especificaciones y cambios documentados.
+
+Consulta [la arquitectura y el flujo de dependencias](docs/architecture.md).
 
 Los directorios `ios/` y `android/` son generados e ignorados por Git. Modifica la configuración Expo y los archivos Firebase, y utiliza prebuild para regenerarlos. Se conserva `package-lock.json` para instalaciones reproducibles. La integración usa CocoaPods con frameworks estáticos y los módulos RNFB enlazados estáticamente, compatibles con el core precompilado de React Native.
 
 ## Validación y límites
 
-Las 8 pruebas de lógica, lint, TypeScript, compatibilidad Expo, los 21 controles de Expo Doctor y la exportación de bundles iOS/Android pasan. La compilación iOS Release se completó con cero errores y tres advertencias. Los resultados de compilación, comprobación visual y límites de las pruebas están en [verification.md](openspec/changes/archive/2026-10-07-add-firebase-auth/verification.md).
+Las 20 pruebas de lógica, casos de uso y arquitectura, lint, TypeScript, compatibilidad Expo, los 21 controles de Expo Doctor y la exportación de bundles iOS/Android pasan. La compilación iOS Release se completó con cero errores y tres advertencias. Los resultados de compilación, comprobación visual y límites de las pruebas están en [verification.md](openspec/changes/archive/2026-10-07-add-firebase-auth/verification.md).
 
 La actualización OAuth también se ha compilado, instalado y abierto como APK de desarrollo Android. Consulta [la verificación OAuth](docs/verification/google-oauth.md). El éxito de login, la persistencia y el logout con una cuenta real deben comprobarse con cuentas propias después de habilitar los proveedores. Durante este trabajo no se crean cuentas en el proyecto Firebase.
 

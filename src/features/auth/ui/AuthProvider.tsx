@@ -1,9 +1,10 @@
-import type { User } from '@react-native-firebase/auth';
+import type { AuthUser } from '../domain/auth-user';
+import type { AuthUseCases } from '../use-cases';
 import { createContext, useContext, useEffect, useState, type PropsWithChildren } from 'react';
-import { observeSession } from '../services/auth';
 
 type AuthState = {
-  user: User | null;
+  useCases: AuthUseCases;
+  user: AuthUser | null;
   initializing: boolean;
   initializationError: boolean;
   retry: () => void;
@@ -11,8 +12,8 @@ type AuthState = {
 
 const AuthContext = createContext<AuthState | null>(null);
 
-export function AuthProvider({ children }: PropsWithChildren) {
-  const [user, setUser] = useState<User | null>(null);
+export function AuthProvider({ children, useCases }: PropsWithChildren<{ useCases: AuthUseCases }>) {
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [initializing, setInitializing] = useState(true);
   const [initializationError, setInitializationError] = useState(false);
   const [attempt, setAttempt] = useState(0);
@@ -22,12 +23,12 @@ export function AuthProvider({ children }: PropsWithChildren) {
     const fail = () => { if (active) { setInitializationError(true); setInitializing(false); } };
     let unsubscribe: (() => void) | undefined;
     try {
-      unsubscribe = observeSession(current => {
+      unsubscribe = useCases.observeSession(current => {
         if (active) { setUser(current); setInitializing(false); setInitializationError(false); }
       });
     } catch { fail(); }
     return () => { active = false; unsubscribe?.(); };
-  }, [attempt]);
+  }, [attempt, useCases]);
 
   function retry() {
     setInitializing(true);
@@ -35,7 +36,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     setAttempt(value => value + 1);
   }
 
-  return <AuthContext.Provider value={{ user, initializing, initializationError, retry }}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{ useCases, user, initializing, initializationError, retry }}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

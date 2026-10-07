@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { authErrorMessage, isAuthCancellation, validateCredentials, performGoogleSignIn, createAuthQueue, googleConfigurationReady } from '../src/services/auth/logic.ts';
+import { authErrorMessage, isAuthCancellation } from '../src/features/auth/ui/auth-errors.ts';
+import { validateCredentials } from '../src/features/auth/domain/credentials.ts';
+import { performGoogleSignIn, createAuthQueue, googleConfigurationReady } from '../src/features/auth/repository/google-sign-in.ts';
 
 test('rejects malformed email and blank password without changing the password', () => {
   assert.ok(validateCredentials('wrong', 'password'));
