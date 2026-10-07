@@ -1,6 +1,6 @@
 # Arquitectura por feature
 
-La aplicación utiliza Clean Architecture dentro de cada feature. Las dos features actuales son `auth` y `counter`.
+La aplicación utiliza Clean Architecture dentro de cada feature. Las dos features actuales son `auth` y `main-screen`.
 
 ```text
 src/
@@ -13,11 +13,11 @@ src/
       use-cases/               Email, registro, Google, sesión, disponibilidad y logout
       repository/              Firebase, Google y mapeo de usuarios
       ui/                      Login, registro, provider, inicialización y mensajes
-    counter/
-      domain/                  Contrato CounterRepository
-      use-cases/               Consultar, incrementar y reiniciar
-      repository/              Contador en memoria por instancia
-      ui/                      Pantalla autenticada y controles
+    main-screen/
+      domain/                  Selección, coordenadas, detalles, foto y contratos
+      use-cases/               Seleccionar, cargar detalles/foto y ubicación opcional
+      repository/              Servicio Firebase y Expo Location
+      ui/                      Mapa, ficha y cargas con cancelación por generación
 ```
 
 ```mermaid
@@ -32,10 +32,12 @@ flowchart LR
 
 Los casos de uso reciben el contrato de repositorio como argumento; no crean SDK, no conocen React y no importan la implementación. El dominio contiene modelos propios: `AuthUser` expone `id`, `email` y `displayName`, sin métodos ni tokens de Firebase. El repositorio traduce la respuesta nativa a este modelo.
 
-La UI recibe los casos de uso y gestiona únicamente presentación y estado de pantalla. `AuthProvider` observa la sesión mediante un caso de uso y libera el listener al desmontarse o reintentar. `CounterFeature` crea un repositorio por pantalla, de forma que el valor se reinicia al volver a montar la feature; no se comparte entre sesiones.
+La UI recibe los casos de uso y gestiona únicamente presentación y estado de pantalla. `AuthProvider` observa la sesión mediante un caso de uso y libera el listener al desmontarse o reintentar. `MainScreenFeature` crea sus dependencias por sesión y remonta al cambiar user.id. El loader de selección invalida las respuestas al cambiar lugar, cerrar, salir o desmontarse. El adapter comprueba también la identidad después de cada respuesta; los tokens permanecen en repository.
 
 `src/app/` declara rutas y guards. Login e índice son adaptadores de una línea a la UI o a su composición. Toda importación de repositorios concretos desde otra capa se concentra en `src/composition/`.
 
 Para añadir una feature, crea sus contratos y modelos en `domain/`, sus operaciones en `use-cases/`, implementaciones en `repository/` y pantallas/hooks en `ui/`. Conecta las implementaciones en composition y registra la ruta en `src/app/`. No accedas a un repositorio o SDK desde una pantalla.
 
-`npm test` verifica reglas de dependencia con el AST de TypeScript, además de probar casos de uso con repositorios falsos. Estas pruebas cubren validación, cancelación, logout, sesión, mapeo de usuarios y aislamiento del contador. Las pruebas nativas con cuentas reales siguen siendo necesarias para confirmar el login en Firebase.
+`npm test` verifica reglas de dependencia con el AST de TypeScript, además de probar casos de uso con repositorios falsos. Estas pruebas cubren validación, cancelación, logout, sesión, mapeo de usuarios y selección rápida, cierre y aislamiento de cargas entre sesiones. Las pruebas nativas con cuentas reales siguen siendo necesarias para confirmar el login en Firebase.
+
+`functions/` implementa el límite de confianza del servicio Places: validación del token Firebase, límites compartidos en Firestore y normalización del proveedor. Los límites solo persisten contadores efímeros; el contenido Places permanece en memoria. Consulta [configuración y despliegue](main-map-setup.md).

@@ -1,8 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createAuthUseCases } from '../src/features/auth/use-cases/index.ts';
-import { createCounterUseCases } from '../src/features/counter/use-cases/index.ts';
-import { createMemoryCounterRepository } from '../src/features/counter/repository/memory-counter-repository.ts';
 import { mapAuthUser } from '../src/features/auth/repository/map-auth-user.ts';
 
 const user = { id: 'uid', email: 'user@example.com', displayName: 'User' };
@@ -64,25 +62,4 @@ test('logout case awaits completion and propagates repository errors', async () 
 test('session mapper exposes only domain fields and preserves anonymous profile values', () => {
   assert.equal(mapAuthUser(null), null);
   assert.deepEqual(mapAuthUser({ uid: 'uid', email: null, displayName: null, getIdToken: () => 'secret' }), { id: 'uid', email: null, displayName: null });
-});
-
-test('counter cases read, increment and reset through their repository', () => {
-  let value = 4;
-  const writes = [];
-  const cases = createCounterUseCases({ getCount: () => value, saveCount: next => { value = next; writes.push(next); } });
-  assert.equal(cases.getCount(), 4);
-  assert.equal(cases.increment(), 5);
-  assert.equal(cases.increment(), 6);
-  assert.equal(cases.reset(), 0);
-  assert.deepEqual(writes, [5, 6, 0]);
-});
-
-test('new counter instances start at zero and never share user state', () => {
-  const first = createCounterUseCases(createMemoryCounterRepository());
-  first.increment(); first.increment();
-  const second = createCounterUseCases(createMemoryCounterRepository());
-  assert.equal(first.getCount(), 2);
-  assert.equal(second.getCount(), 0);
-  second.reset();
-  assert.equal(first.getCount(), 2);
 });

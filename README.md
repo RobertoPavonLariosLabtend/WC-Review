@@ -2,7 +2,7 @@
 
 Repositorio: [WC-Review](https://github.com/RobertoPavonLariosLabtend/WC-Review). `main` es la rama de producción; cada cambio se desarrolla y verifica en su rama de feature antes de integrarse, sin `develop`. Consulta [CONTRIBUTING.md](CONTRIBUTING.md).
 
-Aplicación React Native con Expo 57, TypeScript y Firebase Authentication. Login con email y contraseña, Google; sesión persistente, pantalla autenticada con contador y cierre de sesión.
+Aplicación React Native con Expo 57, TypeScript y Firebase Authentication. Login con email y contraseña, Google; sesión persistente, pantalla autenticada con mapa Google y fichas de establecimientos y cierre de sesión.
 
 ## Requisitos y arranque
 
@@ -25,7 +25,7 @@ npm run check          # Lint, TypeScript y versiones compatibles con Expo
 npx expo-doctor
 npm run export         # Bundles de producción iOS y Android
 npm run ios:release    # App nativa con bundle incorporado, sin necesitar Metro
-openspec validate add-firebase-auth --strict
+openspec validate add-main-map-screen --strict
 ```
 
 ## Firebase
@@ -67,12 +67,17 @@ Documentación: [Google en Firebase iOS](https://firebase.google.com/docs/auth/i
 
 Apple está retirado temporalmente de la app por petición del usuario.
 
+## Mapa y establecimientos
+
+Consulta [la configuración de Maps y el servicio Places](docs/main-map-setup.md) para claves restringidas por plataforma, facturación, endpoints y despliegue. Sin claves Maps, la pantalla muestra configuración pendiente con cierre de sesión. El servicio se prepara localmente y necesita autorización explícita antes de desplegarse.
+
 ## Estructura
 
 La app está organizada por feature con Clean Architecture. Cada feature contiene `ui`, `domain`, `use-cases` y `repository`. La UI usa casos de uso; estos dependen de contratos, y las implementaciones se inyectan desde `src/composition/`.
 
 - `src/features/auth/`: login email/Google, registro por email, sesión y logout.
-- `src/features/counter/`: pantalla autenticada y contador en memoria.
+- `src/features/main-screen/`: mapa, ficha, ubicación opcional y acceso autenticado a Places.
+- `functions/`: servicio de detalles/fotos Places con límites compartidos por usuario.
 - `src/composition/AppProviders.tsx`: conexión de repositorios, casos de uso y UI.
 - `src/app/`: adaptadores de rutas y guards de Expo Router.
 - `app.config.ts` y `config/firebase/`: configuración nativa y OAuth.
@@ -85,8 +90,10 @@ Los directorios `ios/` y `android/` son generados e ignorados por Git. Modifica 
 
 ## Validación y límites
 
-Las 24 pruebas de lógica, casos de uso y arquitectura, lint, TypeScript, compatibilidad Expo, los 21 controles de Expo Doctor y la exportación de bundles iOS/Android pasan. La compilación iOS Release se completó con cero errores y tres advertencias. Los resultados de compilación, comprobación visual y límites de las pruebas están en [verification.md](openspec/changes/archive/2026-10-07-add-firebase-auth/verification.md).
+La verificación anterior de autenticación, incluyendo pruebas, exportaciones y compilación iOS Release, está documentada en [verification.md](openspec/changes/archive/2026-10-07-add-firebase-auth/verification.md).
 
 La actualización OAuth también se ha compilado, instalado y abierto como APK de desarrollo Android. Consulta [la verificación OAuth](docs/verification/google-oauth.md). El éxito de login, la persistencia y el logout con una cuenta real deben comprobarse con cuentas propias después de habilitar los proveedores. Durante este trabajo no se crean cuentas en el proyecto Firebase.
 
-`npm audit` informa de 35 avisos de dependencias (10 moderados y 25 altos). No se han aplicado cambios forzados de versión que rompan la compatibilidad del SDK.
+`npm audit` informa de 36 avisos en la app (10 moderados y 26 altos) y 9 moderados en el servicio. No se han aplicado cambios forzados de versión que rompan la compatibilidad del SDK.
+
+La verificación del mapa se registra en [verification.md](openspec/changes/add-main-map-screen/verification.md). Las comprobaciones locales no acreditan el acceso real a Google Maps/Places ni sustituyen la aceptación en ambas plataformas.

@@ -1,1 +1,1 @@
-export { CounterFeature as default } from '../composition/AppProviders';
+export { default } from '../composition/MainScreenFeature';

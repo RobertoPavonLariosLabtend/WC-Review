@@ -25,6 +25,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     '@react-native-firebase/auth',
     'expo-font',
     'expo-router',
+    ['react-native-maps', { iosGoogleMapsApiKey: process.env.GOOGLE_MAPS_IOS_API_KEY, androidGoogleMapsApiKey: process.env.GOOGLE_MAPS_ANDROID_API_KEY }],
+    ['expo-location', { locationWhenInUsePermission: 'Permite a WC Review centrar el mapa en tu ubicación cuando lo solicites.' }],
   ];
   if (googleAuth.iosUrlScheme) plugins.push(['@react-native-google-signin/google-signin', { iosUrlScheme: googleAuth.iosUrlScheme }]);
 
@@ -36,6 +38,11 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     ios: { ...config.ios, googleServicesFile: iosPath },
     android: { ...config.android, googleServicesFile: androidPath },
     plugins,
-    extra: { ...config.extra, googleAuth },
+    extra: { ...config.extra, googleAuth, mainMap: {
+      iosReady: !!process.env.GOOGLE_MAPS_IOS_API_KEY,
+      androidReady: !!process.env.GOOGLE_MAPS_ANDROID_API_KEY,
+      detailsUrl: process.env.PLACES_DETAILS_URL,
+      photoUrl: process.env.PLACES_PHOTO_URL,
+    } },
   };
 };

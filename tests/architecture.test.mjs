@@ -22,7 +22,7 @@ const modules = files(sourceRoot).map(path => {
   visit(source);
   return { path, name: relative(sourceRoot, path), imports };
 });
-const nativeAuthSdk = specifier => /^(@react-native-firebase\/|@react-native-google-signin\/|expo-constants$)/.test(specifier);
+const nativeAuthSdk = specifier => /^(@react-native-firebase\/|@react-native-google-signin\/|expo-constants$|expo-location$)/.test(specifier);
 
 test('domain and use cases depend only on their feature domain/use cases', () => {
   for (const module of modules.filter(module => /^features\/[^/]+\/(domain|use-cases)\//.test(module.name))) {
@@ -35,10 +35,10 @@ test('domain and use cases depend only on their feature domain/use cases', () =>
   }
 });
 
-test('native auth SDK dependencies stay inside the auth repository', () => {
+test('native data SDK dependencies stay inside repositories', () => {
   for (const module of modules) {
     for (const specifier of module.imports.filter(nativeAuthSdk)) {
-      assert.ok(module.name.startsWith('features/auth/repository/'), `${module.name} imports SDK ${specifier}`);
+      assert.ok((/^features\/(auth|main-screen)\/repository\//.test(module.name)), `${module.name} imports SDK ${specifier}`);
     }
   }
 });

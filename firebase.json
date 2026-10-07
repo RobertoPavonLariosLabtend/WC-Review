@@ -1,0 +1,3 @@
+{
+  "functions": [{ "source": "functions", "codebase": "places", "ignore": ["node_modules", ".git", "tests", "*.log"] }]
+}
