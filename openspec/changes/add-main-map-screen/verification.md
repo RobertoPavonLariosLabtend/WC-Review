@@ -50,3 +50,13 @@ No comprobado como aceptación real: login/logout con cuenta, sesión restaurada
 Se documenta mantenimiento del catálogo en docs/main-map-setup.md y la arquitectura en docs/architecture.md. Solo los dos establecimientos del catálogo tienen fichas; las etiquetas del mapa base no prometen información adicional. No existe editor/subida desde la app en esta iteración. Fotos de 2009 atribuidas, sin afirmaciones sobre baños.
 
 Se conserva intacto el cambio ajeno appleTeamId en app.json y se excluye del commit. No se integra main. OpenSpec no se sincroniza/archiva mientras falte la aceptación real de ambas plataformas (4.3/4.5).
+
+## Reparación de la resolución Swift en el DerivedData habitual
+
+El usuario encontró `There is no XCFramework found` al ejecutar Expo sobre el DerivedData habitual de WCReview. Se comprobó que el checkout de MapLibre Native 6.31.0 existía, pero la carpeta de artefacto solo contenía LICENSE.md. El ZIP de la caché global Swift era válido: 272 entradas, Info.plist del framework presente y SHA256 de3aaa435dd86768b06d90245e630d068dd7eef1491afae7217d1654c52c462a, idéntico al declarado por Package.swift. No se cambió la versión ni se copió manualmente un framework.
+
+Se ejecutó `xcodebuild -resolvePackageDependencies -workspace ios/WCReview.xcworkspace -scheme WCReview`, seguido de `npx expo run:ios --device 26E1A007-2C13-4583-A7D0-FC4788ABE0F4 --no-bundler`. Xcode volvió a preparar el XCFramework en la caché normal y Expo mostró **Build Succeeded, 0 error(s), 2 warning(s)**, instalando la app. Logs /tmp/wc-maplibre-resolve-default.log y /tmp/wc-maplibre-expo-ios-recheck.log.
+
+La primera apertura posterior dio timeout al utilizar el puerto 8081, sin Metro activo: el comando Expo terminó con error después de compilar e instalar correctamente. Se abrió por separado la URL del development client con el Metro activo en 8082 y se abrió WC Review desde el simulador. Se observaron el mapa real, ambos puntos azules, la sesión existente restaurada y la ficha de Casa Labra con fotografía, descripción, dirección y créditos al pulsar su botón. No se ejecutó login/logout ni se solicitó ubicación. No fue necesario modificar código ni copiar el framework.
+
+Las advertencias de fases RNFB/Expo no son errores de compilación. Vuelven a pasar las 33 pruebas y npm run check (lint, TypeScript y versiones Expo). La reparación y el procedimiento se documentan en docs/main-map-setup.md. Esta comprobación no completa la aceptación funcional pendiente en ambas plataformas.

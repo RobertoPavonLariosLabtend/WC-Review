@@ -20,6 +20,17 @@ Para EAS, usa `npx eas-cli@latest build --profile development` con tu perfil con
 
 No hay servicio Places/Functions ni Storage para las fichas. No se han desplegado servicios ni cambiado cuentas o facturación remotas.
 
+## Error iOS: no se encuentra MapLibre.xcframework
+
+MapLibre Native se resuelve como paquete binario Swift. Si Xcode muestra `There is no XCFramework found` dentro de `DerivedData/.../SourcePackages/artifacts/maplibre-gl-native-distribution/`, vuelve a resolver las dependencias del workspace y repite la compilación:
+
+```sh
+xcodebuild -resolvePackageDependencies -workspace ios/WCReview.xcworkspace -scheme WCReview
+npm run ios
+```
+
+El workspace debe existir: si es una instalación nueva sin ios/, ejecuta primero `npx expo prebuild`. No sustituyas el framework copiándolo desde otro DerivedData ni edites Pods/proyectos generados. La resolución usa la versión/checksum declarados por MapLibre. Las advertencias de fases de scripts con dependencias ambiguas no son la causa de este error.
+
 ## Añadir establecimientos y fotografías
 
 1. Edita `src/features/main-screen/repository/catalogue.ts`. Cada entrada requiere id estable/único (letras, números, guiones/guion bajo; máximo 256), nombre, coordenadas válidas y attributions. Dirección y descripción son opcionales. Escribe información verificada; deja ausente lo que no se conozca.
