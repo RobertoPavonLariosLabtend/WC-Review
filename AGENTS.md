@@ -43,3 +43,10 @@ Docs: https://docs.expo.dev/eas/index.md
 ## Feature architecture
 
 Read `docs/architecture.md` before adding features. Each feature owns `ui/`, `domain/`, `use-cases/` and `repository/`. UI calls injected use cases, which depend only on domain contracts. Concrete repositories and native SDKs stay in `repository/`; `src/composition/` wires them. Routes in `src/app/` are adapters. Run `npm test` to check architecture boundaries. Follow `CONTRIBUTING.md`: feature branches from main, no develop, verify before merging.
+
+These conventions apply to all future changes in this repository:
+- Extend the feature that owns the behavior, keeping ui/, domain/, use-cases/ and repository/ together.
+- Domain and use cases must be independent of React, Expo and data SDKs. Keep SDK objects and tokens outside UI/domain.
+- Plan features in OpenSpec and verify with npm test and npm run check before integration. Use skip_specs: true only for refactors that preserve product behavior.
+- Use feature/, fix/ or chore/ branches from main and conventional commits. No develop or force pushes to main. Preserve unrelated local edits.
+- Verify mobile exports for app changes and affected native builds for native changes. Report live-provider verification limits honestly.
