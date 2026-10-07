@@ -15,6 +15,7 @@ function renderMainScreen() {
     'react/jsx-runtime': { jsx, jsxs: jsx },
     react: {
       useEffect: () => {},
+      useMemo: factory => factory(),
       useRef: value => ({ current: value }),
       useState: initial => {
         const value = typeof initial === 'function' ? initial() : initial;
@@ -26,10 +27,10 @@ function renderMainScreen() {
       },
     },
     'react-native': {
-      View: 'View', Text: 'Text', Pressable: 'Pressable', ActivityIndicator: 'ActivityIndicator',
+      View: 'View', Text: 'Text', Pressable: 'Pressable', ScrollView: 'ScrollView', ActivityIndicator: 'ActivityIndicator',
       StyleSheet: { create: styles => styles, absoluteFill: {} },
     },
-    'react-native-maps': { default: 'MapView', Marker: 'Marker', PROVIDER_GOOGLE: 'google' },
+    './EstablishmentMap': { EstablishmentMap: 'EstablishmentMap' },
     'react-native-safe-area-context': { useSafeAreaInsets: () => ({ top: 20, bottom: 20 }) },
     '../../auth/ui/AuthProvider': { useAuth: () => ({ user: { id: 'user' }, useCases: {} }) },
     './EstablishmentCard': { EstablishmentCard: 'EstablishmentCard' },
@@ -43,7 +44,7 @@ function renderMainScreen() {
     assert.ok(name in mocks, `Unexpected component dependency: ${name}`);
     return mocks[name];
   } });
-  const tree = module.exports.default({ useCases: {}, mapReady: false });
+  const tree = module.exports.default({ useCases: {} });
   const header = tree.props.children.find(child => child?.props?.onLayout);
   return {
     measureScreen: tree.props.onLayout,

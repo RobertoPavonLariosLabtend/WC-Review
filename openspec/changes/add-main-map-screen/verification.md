@@ -1,56 +1,52 @@
 # Verificación de add-main-map-screen
 
-Fecha: 2026-10-07. Rama propietaria: `feature/main-screen`. Esquema: `spec-driven`.
+Fecha: 2026-10-07. Rama propietaria: feature/main-screen. Cambio actualizado por petición del usuario: MapLibre/OpenFreeMap y catálogo propio sustituyen Google Maps/Places. La verificación anterior del proveedor Google queda superada por esta migración.
 
-## Resumen
+## Resultado
 
-| Dimensión | Resultado |
-| --- | --- |
-| Completitud | 16/19 tareas completas. Pendientes: 3.1 (claves reales), 5.2 (aceptación con proveedores) y 5.4 (sincronización/archivo final). |
-| Corrección | Los 7 requisitos main-map y el requisito inicial modificado tienen implementación; la interacción del contador ha sido retirada. La cobertura real de proveedor/dispositivos aún no acredita aceptación. |
-| Coherencia | Feature con domain/use-cases/repository/ui; composition inyecta dependencias; auth conserva contrato y listener existentes. |
+Implementación de MapLibre y catálogo propio terminada. 33 pruebas pasan, lint/tipos/versiones Expo y OpenSpec válidos. Ambas plataformas exportan y compilan sin claves de Maps. Prueba nativa parcial de iOS confirmada con mapa real y fotos locales, usando una sesión ficticia en un harness de desarrollo aislado; no acredita login real ni aceptación completa en ambas plataformas. El cambio permanece abierto hasta terminar esa aceptación y el archivado.
 
 ## Comprobaciones locales
 
-- `npm test`: 30/30 pruebas de app, incluidas reglas arquitectónicas, entrada inválida, ubicación opcional, selección rápida, cierre/desmontaje, sesión nueva, error/reintento, fallo de foto y transporte autenticado.
-- `npm test --prefix functions`: 7/7 pruebas de servicio. Se ejecutaron también con `npx --yes --package=node@22 node --test functions/tests/*.test.mjs`, 7/7.
-- `npm run check`: lint, TypeScript y versiones Expo compatibles correctos.
-- `npm run check --prefix functions`: sintaxis correcta; el entrypoint Functions se importa localmente sin desplegar.
-- `npx expo-doctor`: 21/21 comprobaciones correctas.
-- `npm run export`: bundles Hermes de producción para iOS y Android exportados. No incluyen configuración de servicio ni claves Maps reales.
-- `openspec validate add-main-map-screen --strict`: correcto.
-- Generación nativa mediante Expo prebuild: correcta; no se modifican directorios nativos a mano.
-- Android: `:app:assembleDebug` correcto (3m 25s; 568 tareas), usando Java 21 de Android Studio y SDK Android local. Sin clave Maps real: demuestra compilación, no carga de mapa. Log `/tmp/wc-main-map-android-build.log`; APK `android/app/build/outputs/apk/debug/app-debug.apk`.
-- iOS: Xcode 27, Debug para simulador genérico, sin firma: `BUILD SUCCEEDED`, incluyendo el subspec Google de react-native-maps y GoogleMaps 9.4.0. Se activó el plugin únicamente con `GOOGLE_MAPS_IOS_API_KEY=build-verification-only`; no es una clave funcional, no se instala ni distribuye ese binario y no acredita acceso a Google. Log `/tmp/wc-main-map-ios-build.log`; derivados `/tmp/wc-main-map-ios-build`. Después se regenera iOS sin esa variable para restaurar la configuración local sin claves.
-- No son builds firmados para tiendas ni pruebas en dispositivos. La compilación iOS no ejecuta la app; el binario Debug usa Metro para JavaScript. Los bundles móviles se han exportado por separado.
+- npm test: **33/33**; arquitectura, auth/registro existentes, validación de IDs/coordenadas, catálogo/fotos/atribuciones/copia/abort/recursos cruzados, aislamiento de sesiones, selección A→B, cierre/desmontaje y fallos/reintento. El test de mapa ejecuta el componente real transpiliado con dobles: acepta solo IDs del catálogo, verifica orden longitude/latitude, cámara/padding y posición de atribución. No sustituye el mapa nativo.
+- npm run check: lint, TypeScript y expo install --check correctos.
+- npx expo-doctor: **21/21**, sin incidencias detectadas.
+- openspec validate add-main-map-screen --strict: correcto.
+- npm run export: bundles Hermes iOS/Android y los dos JPEG locales incluidos en dist. Log /tmp/wc-maplibre-export.log.
+- Expo prebuild --clean --no-install y pod install: correctos. No se editan directorios nativos a mano; permanecen ignorados.
+- Android :app:assembleDebug: **BUILD SUCCESSFUL**, 2m 13s, 572 tareas. Java 21/SDK Android local; APK android/app/build/outputs/apk/debug/app-debug.apk. Log /tmp/wc-maplibre-android-build.log. No había dispositivo/emulador Android conectado; no se acredita comportamiento visual/runtime Android.
+- iOS: **BUILD SUCCEEDED**, Xcode 27, Debug Simulator genérico arm64/x86_64, CODE_SIGNING_ALLOWED=NO. MapLibreReactNative 11.5.0 y MapLibre Native 6.31.0; sin GoogleMaps/AirGoogleMaps en Podfile.lock. Log /tmp/wc-maplibre-ios-build.log; derivados /tmp/wc-maplibre-ios-build. No es un build firmado para tiendas.
+- Binario iOS instalado en iPhone 18 Pro/iOS 27. App de producción abierta mediante Metro actualizado en puerto 8082; muestra login correctamente. La instancia previa 8081 conservaba el plugin react-native-maps y devolvía 500 tras retirarlo; se mantiene intacta y requiere reiniciarse.
 
-## Trazabilidad a requisitos y escenarios
+## Inspección nativa iOS
 
-| Requisito | Evidencia de implementación | Cobertura / límite |
-| --- | --- | --- |
-| Authenticated map and global user | `src/composition/MainScreenFeature.tsx:8`, `src/features/main-screen/ui/MainScreen.tsx:11`, guards existentes de `_layout.tsx` | Casos auth existentes; remount por user.id y loader por sesión. Login y logout con cuenta real siguen pendientes. |
-| Map navigation and optional location | `MainScreen.tsx:9`, `MainScreen.tsx:34`, `repository/expo-location-repository.ts:3` | No petición al montar; validación/denegación en casos de uso. Permisos nativos y centrado real pendientes. |
-| Select visible establishments | `MainScreen.tsx:52`, `use-cases/index.ts:6` | IDs/coordenadas inválidos rechazados antes del proveedor. Solo onPoiClick inicia selección; toque normal no tiene handler de carga. Evento nativo real pendiente. |
-| Partial overlay establishment card | `MainScreen.tsx:22`, `MainScreen.tsx:50`, `ui/EstablishmentCard.tsx:9` | Límite 50%, ScrollView, safe areas, close, extensibilidad por children y padding nativo. Pantalla pequeña, texto grande y cámara/atribución requieren inspección nativa con Maps configurado. |
-| Partial data and photo attribution | `EstablishmentCard.tsx:6`, `functions/src/provider.mjs:8` | Normalización parcial, créditos originales, imagen neutra y descripción ausente. Enlaces/MIME validado; atribución visual real pendiente. |
-| Loading failure and selection consistency | `ui/selection-loader.ts:6`, `MainScreen.tsx:21` | Pruebas de A lenta/B, close y dispose con proveedor que ignora abort, foto tardía, reintento y fallo de foto conservando detalles. |
-| Provider configuration and protected details | `app.config.ts:28`, `repository/service-places-repository.ts:10`, `functions/src/service.mjs:9`, `functions/src/limiter.mjs:3` | Token/revocación, parámetros, pertenencia, límites transaccionales, timeout, MIME/tamaño y errores sin secretos. Firestore/Admin/Google se prueban con dobles, no contra servicios remotos. |
-| Initial screen / Counter interaction removed | `src/app/index.tsx:1`, `src/composition/AppProviders.tsx:1` | CounterFeature y sus pruebas han sido retirados; guards/login/registro preservados. |
+Para revisar componentes sin crear usuarios ni modificar auth, se creó temporalmente un proyecto Metro ignorado en .expo/native-map-preview, con el **MainScreen real**, **AuthProvider real** inyectado con un caso de sesión ficticio, repositorio real del catálogo y ubicación simulada. Se utilizó el mismo binario compilado; el mapa conectó al proveedor real OpenFreeMap. El harness no forma parte del bundle/export/commits de la aplicación y se eliminó después. Se detuvo su Metro y se restauró la app normal en el simulador; el Metro normal 8082 queda disponible.
 
-## Pendientes que impiden cerrar y archivar
+Confirmado visualmente:
 
-- **CRITICAL — 3.1:** instalar/configurar plugins está hecho, pero faltan `GOOGLE_MAPS_IOS_API_KEY` y `GOOGLE_MAPS_ANDROID_API_KEY` reales, restringidas por plataforma y entorno. Aplicar los pasos de `docs/main-map-setup.md` y recompilar con esas claves.
-- **CRITICAL — 5.2:** faltan URLs de `placeDetails`/`placePhoto` y el servicio desplegado/configurado. El despliegue requiere autorización explícita según el diseño y 2.4. Completar después la matriz de aceptación de `docs/main-map-setup.md` en ambas plataformas. No se han creado usuarios ni cambiado servicios remotos.
-- **CRITICAL — 5.4:** no sincronizar ni archivar hasta completar configuración y aceptación. El trabajo local puede registrarse y subirse para revisión manteniendo abierto el cambio; no integrar en main.
-- **WARNING:** las pruebas de layout y eventos del mapa son inspección de implementación, no una validación visual en dispositivo. La compilación no demuestra POI, cámara, fotos, permisos ni éxito del proveedor.
-- **WARNING:** límites Firestore compartidos se verifican con transacciones falsas; reglas privadas/TTL y cuotas globales necesitan verificación en el proyecto al desplegar. No se persiste contenido Places.
+- Estilo/teselas reales de Madrid, pan geográfico, nombres y puntos azules del catálogo.
+- Botón accesible Casa Labra abre su ficha: fotografía correcta, nombre, descripción, dirección y créditos Tamorlan/CC BY 3.0.
+- Toque **nativo sobre el punto azul de Botín** cambia la selección, centra el punto en el área descubierta y abre su foto/descripción/dirección correctas.
+- La ficha mantiene mapa descubierto, safe area y controles de atribución/logo por encima de ella. Foto, autor y licencia permanecen visibles; la fuente tiene acceso por scroll.
+- No crash onLayout ni necesidad de Maps key. El test sigue capturando altura antes del updater de estado.
 
-## Preservación y entrega
+No comprobado como aceptación real: login/logout con cuenta, sesión restaurada/cambio de usuario en dispositivo, permiso/ubicación nativa, texto grande/pantalla pequeña, caída de red/reintento nativo, fallbacks visuales ni la matriz Android. Estos escenarios se cubren parcialmente con dobles, pero no se marcan aceptados. No se modificaron proveedores Firebase, cuentas, facturación, secretos ni servicios remotos.
 
-El cambio local de `app.json` que añade `appleTeamId` se conserva y se excluye de los commits de esta feature. No se integra ni se hace force push a main. No se suben claves, tokens, directorios generados ni node_modules.
+## Trazabilidad
 
-## Corrección del crash onLayout
+| Requisito | Implementación y evidencia |
+| --- | --- |
+| Sesión/mapa autenticado | composition/MainScreenFeature, AuthProvider y guards existentes; login observado. Sesión real pendiente. |
+| Navegación/ubicación opcional | ui/EstablishmentMap y repository/expo-location-repository; mapa real observado, denegación probada en casos de uso. |
+| Selección catálogo | GeoJSONSource y botones accesibles; toque nativo y botón verificados en iOS; IDs desconocidos ignorados. |
+| Ficha parcial | MainScreen calcula máximo 50% y reserva espacio descubierto; EstablishmentCard permite scroll y close; inspección iOS parcial. |
+| Datos parciales/créditos | Catálogo propio, photos locales, fuente/autor/licencia, sin crédito Google fijo. Fallbacks de datos/foto preservados. |
+| Cargas/cancelación | Selection loader existente con generación y abort, catálogo con abort, mapa con loading/error/retry; pruebas de carreras. |
+| Sin facturación/catálogo propio | Plugin MapLibre, OpenFreeMap sin key, adapter inyectado y photos empaquetadas; retirados servicio Places y variables en app.config. |
+| Initial screen/counter retirado | src/app/index.tsx sigue conectado a MainScreenFeature; login/registro intactos. |
 
-El log aportado por el usuario mostró `Cannot read property layout of null` y la advertencia de evento sintético liberado. Los dos onLayout de MainScreen leían nativeEvent desde el actualizador funcional de estado, que puede ejecutarse después de liberar el evento. Ahora capturan height dentro del handler y encolan solo el número. Si la medida no cambia, conservan la identidad del estado y evitan renders redundantes.
+## Entrega y pendientes
 
-`tests/main-screen-layout.test.mjs` ejecuta los handlers del componente real con una cola diferida: libera ambos eventos antes de aplicar los updates y verifica que se conservan altura de pantalla y cabecera. Fallaba con el mismo TypeError antes del arreglo; pasa después. También comprueba medidas repetidas. Las 30 pruebas de app, lint, TypeScript y exportaciones iOS/Android pasan. No hay cambios nativos, de configuración o de proveedores en este arreglo. La recarga y aceptación en el dispositivo del usuario siguen pendientes; esta regresión no sustituye 5.2.
+Se documenta mantenimiento del catálogo en docs/main-map-setup.md y la arquitectura en docs/architecture.md. Solo los dos establecimientos del catálogo tienen fichas; las etiquetas del mapa base no prometen información adicional. No existe editor/subida desde la app en esta iteración. Fotos de 2009 atribuidas, sin afirmaciones sobre baños.
+
+Se conserva intacto el cambio ajeno appleTeamId en app.json y se excluye del commit. No se integra main. OpenSpec no se sincroniza/archiva mientras falte la aceptación real de ambas plataformas (4.3/4.5).

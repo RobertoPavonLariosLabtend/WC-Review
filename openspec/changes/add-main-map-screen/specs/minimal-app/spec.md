@@ -1,7 +1,7 @@
 ## MODIFIED Requirements
 
 ### Requirement: Initial screen
-The app SHALL show login when no session exists and SHALL show the Spanish main Google map screen after session restoration identifies an authenticated user.
+The app SHALL show login when no session exists and SHALL show the Spanish main MapLibre map screen after session restoration identifies an authenticated user.
 
 #### Scenario: Fresh launch
 - **WHEN** the user opens the installed app without a session

@@ -1,62 +1,63 @@
-# Mapa principal y servicio Places
+# Mapa principal y catálogo propio
 
-La pantalla autenticada abre Google Maps en Madrid (40.4168, -3.7038). Permite tocar los POIs que Google presenta a ese nivel de zoom; no es un catálogo exhaustivo. La ficha ocupa como máximo el 50% de la altura útil y su contenido se desplaza. Ubicación solo se solicita al pulsar **Mi ubicación**, sin seguimiento continuo. No se generan descripciones cuando falta editorialSummary.
+La pantalla autenticada utiliza **MapLibre Native + OpenFreeMap**, sin claves Google Maps ni cuenta de facturación para el mapa. El mapa empieza en Madrid (40.4168, -3.7038), zoom 14.5. La red es necesaria para descargar el estilo/teselas; las fichas y fotografías se empaquetan con la app.
 
-## Configuración móvil por entorno
+Los puntos azules y la lista horizontal abren las fichas de WC Review. Las etiquetas del mapa base son contexto geográfico y no representan fichas disponibles. El catálogo inicial contiene **Casa Labra** y **Sobrino de Botín**, no todos los establecimientos de Madrid. La ficha ocupa como máximo el 50% de altura útil, permite scroll, muestra autor/licencia de la foto y la fuente de información. Mi ubicación solicita permiso solo al pulsar, sin seguimiento continuo.
 
-Define estas variables en `.env.local` para desarrollo o en el entorno del perfil EAS correspondiente; no las guardes en Git:
+## Compilar después del cambio
 
-```dotenv
-GOOGLE_MAPS_IOS_API_KEY=
-GOOGLE_MAPS_ANDROID_API_KEY=
-PLACES_DETAILS_URL=
-PLACES_PHOTO_URL=
-```
-
-Las dos URLs son HTTPS completas y distintas, obtenidas al desplegar `placeDetails` y `placePhoto`. No contienen claves ni tokens. `app.config.ts` configura el plugin de react-native-maps; el cliente recibe únicamente indicadores de disponibilidad y las URLs. Las claves Maps sí forman parte del binario nativo por necesidad del SDK; deben estar restringidas y separadas del secreto Places. Cambiar claves o indicadores requiere regenerar/recompilar el binario, no solo recargar JavaScript. No publiques una actualización OTA con indicadores que no correspondan al binario instalado.
-
-1. Activa facturación en Google Cloud y habilita **Maps SDK for iOS**, **Maps SDK for Android** y **Places API (New)**.
-2. Crea una clave iOS restringida a `com.wcreview.app` y exclusivamente Maps SDK for iOS.
-3. Crea una clave Android restringida a `com.wcreview.app` y a las huellas SHA-1 de la firma del entorno, exclusivamente Maps SDK for Android. Producción requiere la firma de Play App Signing; desarrollo usa su propia firma.
-4. Usa claves distintas para desarrollo y producción. No reutilices las claves Firebase/OAuth para el servicio Places.
-5. Configura las URLs y recompila con `npx expo prebuild`, `npm run ios`/`npm run android`, o `npx eas-cli@latest build --profile development` si tienes un perfil EAS preparado.
-
-Sin clave de la plataforma, la app muestra un estado español de configuración y conserva cerrar sesión. Si falta el servicio, el mapa sigue utilizable y la ficha informa del error con reintento.
-
-Referencia: [react-native-maps en Expo 57](https://docs.expo.dev/versions/v57.0.0/sdk/map-view/), [ubicación en Expo 57](https://docs.expo.dev/versions/v57.0.0/sdk/location/).
-
-## Servicio Firebase preparado para despliegue
-
-`functions/` contiene funciones HTTPS de segunda generación con runtime Node 22. La región predeterminada es `europe-west1`. `firebase.json` utiliza el codebase `places`; no sustituye otros servicios del proyecto. No se ha desplegado nada ni modificado facturación, APIs, secretos, reglas o cuotas remotas durante la implementación.
-
-Prerequisitos: proyecto Firebase con plan que permita Functions, facturación Google, Firestore Native habilitado y credenciales de administrador disponibles para desplegar. El runtime debe tener permiso para verificar tokens (incluida revocación), acceder al secreto y ejecutar transacciones Firestore. La colección `placesRequestLimits` es exclusiva del backend: deniega acceso de clientes en las reglas Firestore existentes y configura TTL en `expiresAt`. El documento solo contiene contador y expiración; el identificador se deriva mediante hash de usuario, tipo y minuto. No guarda contenido Places ni nombres de recursos de fotos. Las reglas/TTL se revisan en el proyecto antes del despliegue; no se sobrescriben desde este repositorio.
-
-Comprobaciones locales:
+MapLibre es un módulo nativo; no funciona en Expo Go ni en el binario anterior con react-native-maps. No basta con recargar Metro ni con publicar una OTA al binario antiguo.
 
 ```sh
-npm ci --prefix functions
-npm test --prefix functions
-npm run check --prefix functions
+npm ci
+npx expo prebuild --clean
+npm run ios
+# O bien, para Android:
+npm run android
 ```
 
-Después de autorización explícita para modificar servicios remotos, los pasos de despliegue son:
+Para EAS, usa `npx eas-cli@latest build --profile development` con tu perfil configurado. El plugin está en app.config.ts. Detén Metro y reinícialo con `npx expo start --dev-client --clear` si estaba abierto durante el cambio: el proceso anterior puede conservar el plugin react-native-maps en memoria. Las variables GOOGLE_MAPS_IOS_API_KEY, GOOGLE_MAPS_ANDROID_API_KEY, PLACES_DETAILS_URL y PLACES_PHOTO_URL ya no se leen y pueden eliminarse del entorno local/EAS. Firebase Authentication y su login Google mantienen sus archivos/OAuth existentes; esa configuración es independiente del mapa.
 
-```sh
-npx firebase-tools@latest login
-npx firebase-tools@latest functions:secrets:set PLACES_API_KEY --project wc-review-11c48
-npx firebase-tools@latest deploy --only functions:places --project wc-review-11c48
+No hay servicio Places/Functions ni Storage para las fichas. No se han desplegado servicios ni cambiado cuentas o facturación remotas.
+
+## Añadir establecimientos y fotografías
+
+1. Edita `src/features/main-screen/repository/catalogue.ts`. Cada entrada requiere id estable/único (letras, números, guiones/guion bajo; máximo 256), nombre, coordenadas válidas y attributions. Dirección y descripción son opcionales. Escribe información verificada; deja ausente lo que no se conozca.
+2. Para una foto, añade un JPEG en `repository/photos/` (recomendado hasta 960px de ancho), registra su require estático en `bundled-places-repository.ts` y utiliza esa clave en photo.asset. No se construyen rutas require dinámicas, para que Metro pueda empaquetar el recurso.
+3. Incluye en photo.authors el autor, enlace al original, licencia y modificaciones cuando corresponda. Para fotos propias basta el crédito que proceda. No copies fotos de Google Places u otros sitios sin derechos de reutilización.
+4. Verifica con `npm test`, `npm run check` y `npm run export`, y distribuye una versión/bundle compatible con el módulo MapLibre. Un cambio de catálogo no exige regenerar código nativo; cambiar dependencias/plugins sí.
+
+Ejemplo de entrada sin foto:
+
+```ts
+{
+  id: 'mi-local',
+  name: 'Mi establecimiento',
+  coordinate: { latitude: 40.4168, longitude: -3.7038 },
+  address: 'Dirección verificada',
+  description: 'Descripción propia y verificada.',
+  attributions: [{ name: 'Información facilitada por el establecimiento' }],
+}
 ```
 
-Introduce el secreto interactivamente, nunca como argumento o en el bundle. Restringe la clave de servidor a Places API (New); para restricciones por IP necesitas primero salida con IP estable. Los parámetros Firebase `PLACES_REGION`, `PLACES_DETAILS_PER_MINUTE` y `PLACES_PHOTOS_PER_MINUTE` tienen valores predeterminados `europe-west1`, `30` y `30`; el CLI permite configurar los valores al desplegar. Node 22 es el runtime de despliegue; la ejecución local puede utilizar una versión más reciente y debe confirmarse también con Node 22 antes de publicar.
+El catálogo es público dentro del bundle. El acceso a la pantalla sigue protegido por sesión, pero no hay permisos de edición ni sincronización remota. Aportaciones desde la app y gestión multiusuario requieren otra feature. No se afirma que los ejemplos tengan baños accesibles ni se inventan reseñas.
 
-Cada endpoint acepta solo GET y un ID token Firebase válido en `Authorization: Bearer …`; valida revocación y rechaza peticiones inválidas antes de consultar Google. El límite por usuario/minuto es transaccional y compartido entre instancias. Se aceptan IDs acotados y solo la primera foto actualmente devuelta para ese lugar. La petición de foto vuelve a consultar detalles para verificar pertenencia sin persistir metadatos; consume una solicitud de detalles adicional, además de su límite de fotos. La ventana es por minuto de reloj, no deslizante. Se mantiene `maxInstances: 10`; ajusta cuotas del proveedor y alertas de presupuesto en Cloud para el tráfico total del proyecto. Los límites por usuario no sustituyen las cuotas globales.
+## Fuentes del catálogo inicial
 
-Details solicita exclusivamente `id,displayName,location,formattedAddress,editorialSummary,photos,attributions` y `languageCode=es`. La máscara limita campos pero incluye datos de distintos niveles de facturación; editorialSummary tiene su propio nivel de tarifa. Consulta [campos y facturación de Details](https://developers.google.com/maps/documentation/places/web-service/place-details) antes de habilitar tráfico.
+Las descripciones son breves textos propios basados en [Casa Labra](https://www.esmadrid.com/restaurantes/casa-labra) y [Botín](https://www.esmadrid.com/restaurantes/botin), del portal oficial Turismo de Madrid. Las coordenadas de referencia se comprobaron en las categorías Commons [Casa Labra](https://commons.wikimedia.org/wiki/Category:Casa_Labra,_Madrid) y [Sobrino de Botín](https://commons.wikimedia.org/wiki/Category:Sobrino_de_Bot%C3%ADn).
 
-Las fotos se solicitan con máximo 800×800, se valida el MIME y se limita la lectura a 5 MiB, incluso sin Content-Length. Se entregan como datos de imagen mediante el endpoint autenticado, con atribuciones del autor. Las claves de servidor nunca llegan a la UI, ni en las URLs de fotos. Cada solicitud al proveedor tiene timeout de 10 segundos; la función tiene 30 segundos y el cliente 25. Las respuestas son `private, no-store`; no se persisten detalles ni fotos. Consulta [Photos y atribuciones](https://developers.google.com/maps/documentation/places/web-service/place-photos).
+Fotos **Tamorlan**, 2009, **CC BY 3.0**, reducidas a 960px; la presentación cover encuadra la imagen. Son fotografías históricas, no una garantía del aspecto actual:
 
-Verifica disponibilidad y condiciones de Google Maps Platform para la región de facturación, incluidas las condiciones EEA. No se afirma que todos los POIs dispongan de fotos o resumen editorial.
+- [Casa Labra-2009.jpg](https://commons.wikimedia.org/wiki/File:Casa_Labra-2009.jpg).
+- [Casa Botín-Madrid-2009.jpg](https://commons.wikimedia.org/wiki/File:Casa_Bot%C3%ADn-Madrid-2009.jpg).
+- [Licencia CC BY 3.0](https://creativecommons.org/licenses/by/3.0/).
+
+## Proveedor y atribuciones
+
+Estilo: `https://tiles.openfreemap.org/styles/liberty`. [OpenFreeMap](https://openfreemap.org/) ofrece una instancia pública sin registro, clave ni límites de solicitudes anunciados, sin SLA. Mantén visibles las atribuciones incluidas en el estilo (OpenStreetMap/OpenMapTiles). La app coloca los controles de atribución por encima de la ficha y no los desactiva. No descarga áreas para uso offline ni usa los servidores públicos raster de OSM.
+
+Referencias: [MapLibre con Expo](https://maplibre.org/maplibre-react-native/docs/setup/expo/), [OpenFreeMap](https://openfreemap.org/quick_start/), [ubicación Expo 57](https://docs.expo.dev/versions/v57.0.0/sdk/location/).
 
 ## Aceptación en dispositivos
 
-En ambas plataformas, con claves restringidas y servicio desplegado, comprobar: restauración de sesión, toque real de POI, selección A→B con A lenta, cierre durante carga, fallo y reintento, foto con autor/enlace, ausencia de foto/resumen, ficha en pantalla pequeña con texto grande, logo/atribución nativos visibles, ubicación concedida/denegada/timeout y logout durante cargas. Confirmar que entrar con otro usuario elimina toda selección anterior. Las pruebas con dobles y los bundles no verifican estas integraciones reales.
+Comprobar en ambas plataformas: mapa sin claves, toque de marcador y botón accesible, foto/créditos/fuente, selección rápida A→B, cierre sin perder viewport, pantalla pequeña y texto grande, atribuciones visibles, mapa sin red con error/reintento, catálogo vacío, ubicación concedida/denegada, logout y cambio de usuario. Las pruebas con dobles, bundles y compilaciones no sustituyen esta aceptación; consultar verification.md del cambio OpenSpec para resultados y límites reales.

@@ -2,11 +2,12 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createMainUseCases } from '../src/features/main-screen/use-cases/index.ts';
 import { createSelectionLoader } from '../src/features/main-screen/ui/selection-loader.ts';
-import { createServicePlacesRepository } from '../src/features/main-screen/repository/service-places-repository.ts';
+import { createCatalogPlacesRepository } from '../src/features/main-screen/repository/catalog-places-repository.ts';
+import { catalogue } from '../src/features/main-screen/repository/catalogue.ts';
 const place = id => ({ placeId: id, name: id, coordinate: { latitude: 40, longitude: -3 } });
 const details = id => ({ id, name: id, attributions: [] });
 function cases(overrides = {}, location = { getCurrentCoordinates: async () => ({ latitude: 40, longitude: -3 }) }) {
-  return createMainUseCases({ getDetails: async id => details(id), getPhoto: async () => ({ uri: 'data:image/png;base64,YQ==', authors: [] }), ...overrides }, location);
+  return createMainUseCases({ listPlaces: async () => [], getDetails: async id => details(id), getPhoto: async () => ({ uri: 'data:image/png;base64,YQ==', authors: [] }), ...overrides }, location);
 }
 function deferred() { let resolve, reject; const promise = new Promise((a, b) => { resolve = a; reject = b; }); return { promise, resolve, reject }; }
 
@@ -66,18 +67,44 @@ test('details errors offer retry; photo failure preserves details and clears loa
   assert.equal(states.at(-1).details.id, 'A'); assert.equal(states.at(-1).photoLoading, undefined);
 });
 
-test('service adapter authenticates, encodes parameters, rejects session changes and unsafe photos', async () => {
-  let id = 'one'; const session = async () => ({ id, token: 'private-token' });
-  const repository = createServicePlacesRepository({ detailsUrl: 'https://example.com/details', photoUrl: 'https://example.com/photo' }, session, async (url, options) => {
-    assert.equal(options.headers.Authorization, 'Bearer private-token'); assert.ok(!url.includes('private-token'));
-    assert.ok(url.includes('placeId=A'));
-    return new Response(JSON.stringify(details('A')));
-  });
-  assert.equal((await repository.getDetails('A', new AbortController().signal)).id, 'A');
-  const changed = createServicePlacesRepository({ detailsUrl: 'https://example.com/details' }, session, async () => { id = 'two'; return new Response(JSON.stringify(details('A'))); });
-  await assert.rejects(changed.getDetails('A', new AbortController().signal), { code: 'unauthorized' });
-  const unsafe = createServicePlacesRepository({ photoUrl: 'https://example.com/photo' }, session, async () => new Response(JSON.stringify({ uri: 'https://evil/?key=secret', authors: [] })));
-  await assert.rejects(unsafe.getPhoto('A', { resource: 'places/A/photos/P', authors: [] }, new AbortController().signal));
-  const missing = createServicePlacesRepository({}, session);
-  await assert.rejects(missing.getDetails('A', new AbortController().signal), { code: 'unavailable' });
+test('catalogue lists selectable places and delivers its own descriptions and credited photos', async () => {
+  const repository = createCatalogPlacesRepository(catalogue, asset => `file:///photos/${asset}.jpg`);
+  const signal = new AbortController().signal;
+  const selections = await createMainUseCases(repository, {}).listPlaces(signal);
+  assert.equal(selections.length, 2);
+  for (const place of selections) {
+    const info = await repository.getDetails(place.placeId, signal);
+    assert.equal(info.name, place.name);
+    assert.ok(info.description);
+    assert.deepEqual(info.coordinate, place.coordinate);
+    const photo = await repository.getPhoto(place.placeId, info.photo, signal);
+    assert.ok(photo.uri.startsWith('file:///photos/'));
+    assert.ok(photo.authors.some(author => author.uri.includes('creativecommons.org')));
+  }
+});
+
+test('catalogue isolates data, supports missing photos/descriptions and rejects mismatched photos', async () => {
+  const records = [{ id: 'A', name: 'Local', coordinate: { latitude: 40, longitude: -3 }, attributions: [] }];
+  const repository = createCatalogPlacesRepository(records, () => { throw new Error('Must not resolve photo'); });
+  const signal = new AbortController().signal;
+  records[0].name = 'Changed';
+  const info = await repository.getDetails('A', signal);
+  assert.equal(info.name, 'Local');
+  assert.equal(info.photo, undefined); assert.equal(info.description, undefined);
+  info.coordinate.latitude = 90;
+  assert.equal((await repository.getDetails('A', signal)).coordinate.latitude, 40);
+  await assert.rejects(repository.getDetails('unknown', signal), { code: 'unavailable' });
+  const full = createCatalogPlacesRepository(catalogue, () => 'file:///photo.jpg');
+  await assert.rejects(full.getPhoto('botin', { resource: 'places/casa-labra/photos/main', authors: [] }, signal), { code: 'invalid-selection' });
+  assert.throws(() => createCatalogPlacesRepository([...records, ...records], () => ''), /Duplicate/);
+});
+
+test('catalogue respects aborted loads and list use case validates marker coordinates', async () => {
+  const repository = createCatalogPlacesRepository(catalogue, () => 'file:///photo.jpg');
+  // RN has a smaller AbortSignal implementation than Node: no throwIfAborted.
+  const signal = { aborted: true };
+  await assert.rejects(repository.listPlaces(signal), { name: 'AbortError' });
+  await assert.rejects(repository.getDetails('botin', signal), { name: 'AbortError' });
+  const invalid = cases({ listPlaces: async () => [place('valid'), { ...place('bad'), coordinate: { latitude: 95, longitude: 0 } }] });
+  await assert.rejects(invalid.listPlaces(new AbortController().signal), { code: 'invalid-selection' });
 });

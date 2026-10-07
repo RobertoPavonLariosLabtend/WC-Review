@@ -2,7 +2,7 @@
 
 Repositorio: [WC-Review](https://github.com/RobertoPavonLariosLabtend/WC-Review). `main` es la rama de producción; cada cambio se desarrolla y verifica en su rama de feature antes de integrarse, sin `develop`. Consulta [CONTRIBUTING.md](CONTRIBUTING.md).
 
-Aplicación React Native con Expo 57, TypeScript y Firebase Authentication. Login con email y contraseña, Google; sesión persistente, pantalla autenticada con mapa Google y fichas de establecimientos y cierre de sesión.
+Aplicación React Native con Expo 57, TypeScript y Firebase Authentication. Login con email y contraseña, Google; sesión persistente, pantalla autenticada con mapa MapLibre/OpenFreeMap y fichas propias de establecimientos y cierre de sesión.
 
 ## Requisitos y arranque
 
@@ -69,15 +69,14 @@ Apple está retirado temporalmente de la app por petición del usuario.
 
 ## Mapa y establecimientos
 
-Consulta [la configuración de Maps y el servicio Places](docs/main-map-setup.md) para claves restringidas por plataforma, facturación, endpoints y despliegue. Sin claves Maps, la pantalla muestra configuración pendiente con cierre de sesión. El servicio se prepara localmente y necesita autorización explícita antes de desplegarse.
+El mapa utiliza **MapLibre Native + OpenFreeMap**, sin clave ni cuenta de facturación del mapa. Las fichas proceden de un catálogo propio editable en el proyecto; incluye inicialmente Casa Labra y Sobrino de Botín con descripciones y fotografías locales atribuidas. Consulta [compilación y mantenimiento del catálogo](docs/main-map-setup.md). El cambio desde Google requiere un nuevo development build. No existe editor móvil ni descarga automática de fotos de todos los comercios.
 
 ## Estructura
 
 La app está organizada por feature con Clean Architecture. Cada feature contiene `ui`, `domain`, `use-cases` y `repository`. La UI usa casos de uso; estos dependen de contratos, y las implementaciones se inyectan desde `src/composition/`.
 
 - `src/features/auth/`: login email/Google, registro por email, sesión y logout.
-- `src/features/main-screen/`: mapa, ficha, ubicación opcional y acceso autenticado a Places.
-- `functions/`: servicio de detalles/fotos Places con límites compartidos por usuario.
+- `src/features/main-screen/`: mapa MapLibre, ficha, catálogo propio y ubicación opcional.
 - `src/composition/AppProviders.tsx`: conexión de repositorios, casos de uso y UI.
 - `src/app/`: adaptadores de rutas y guards de Expo Router.
 - `app.config.ts` y `config/firebase/`: configuración nativa y OAuth.
@@ -94,6 +93,6 @@ La verificación anterior de autenticación, incluyendo pruebas, exportaciones y
 
 La actualización OAuth también se ha compilado, instalado y abierto como APK de desarrollo Android. Consulta [la verificación OAuth](docs/verification/google-oauth.md). El éxito de login, la persistencia y el logout con una cuenta real deben comprobarse con cuentas propias después de habilitar los proveedores. Durante este trabajo no se crean cuentas en el proyecto Firebase.
 
-`npm audit` informa de 36 avisos en la app (10 moderados y 26 altos) y 9 moderados en el servicio. No se han aplicado cambios forzados de versión que rompan la compatibilidad del SDK.
+`npm audit` informa de 36 avisos en la app (10 moderados y 26 altos). No se han aplicado cambios forzados de versión que rompan la compatibilidad del SDK.
 
-La verificación del mapa se registra en [verification.md](openspec/changes/add-main-map-screen/verification.md). Las comprobaciones locales no acreditan el acceso real a Google Maps/Places ni sustituyen la aceptación en ambas plataformas.
+La verificación del mapa se registra en [verification.md](openspec/changes/add-main-map-screen/verification.md). Las comprobaciones locales no acreditan la interacción nativa con MapLibre/OpenFreeMap ni sustituyen la aceptación en ambas plataformas.

@@ -10,6 +10,7 @@ export type DisplayPhoto = { uri: string; authors: Attribution[] };
 export type MainErrorCode = 'invalid-selection' | 'unavailable' | 'unauthorized' | 'rate-limit' | 'location-denied' | 'location-unavailable';
 export function mainError(code: MainErrorCode) { return Object.assign(new Error(code), { code }); }
 export interface PlacesRepository {
+  listPlaces(signal: AbortSignal): Promise<PlaceSelection[]>;
   getDetails(placeId: string, signal: AbortSignal): Promise<EstablishmentDetails>;
   getPhoto(placeId: string, photo: PlacePhoto, signal: AbortSignal): Promise<DisplayPhoto>;
 }

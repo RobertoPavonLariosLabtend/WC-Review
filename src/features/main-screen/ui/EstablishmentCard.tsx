@@ -22,7 +22,6 @@ export function EstablishmentCard({ state, height, close, retry, children }: { s
         {photo && !imageFailed && <Credits items={photo.authors} />}
         <Text style={styles.body}>{details?.description ?? 'Descripción no disponible'}</Text>
         {details?.address && <Text style={styles.body}>{details.address}</Text>}
-        <Text style={styles.credit}>Google Maps</Text>
         <Credits items={details?.attributions ?? []} />
         {children}
       </>}

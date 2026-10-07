@@ -6,6 +6,13 @@ export function validCoordinates(value: Coordinates) {
 export function validPlaceId(value: string) { return typeof value === 'string' && /^[A-Za-z0-9_-]{1,256}$/.test(value); }
 export function createMainUseCases(places: PlacesRepository, location: LocationRepository) {
   return {
+    async listPlaces(signal: AbortSignal) {
+      const selections = await places.listPlaces(signal);
+      return selections.map(selection => {
+        if (!validPlaceId(selection.placeId) || !validCoordinates(selection.coordinate) || !selection.name?.trim()) throw mainError('invalid-selection');
+        return { ...selection, name: selection.name.trim() };
+      });
+    },
     select(selection: PlaceSelection): PlaceSelection {
       if (!selection || !validPlaceId(selection.placeId) || !validCoordinates(selection.coordinate)) throw mainError('invalid-selection');
       return { ...selection, name: selection.name?.trim() || 'Establecimiento' };
