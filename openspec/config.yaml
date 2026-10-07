@@ -9,7 +9,8 @@ context: |
   src/composition/ wires implementations. src/app/ contains route adapters and guards.
   Current features are auth and counter. Login supports email/password and Google; Apple is removed.
   main is production integration. Use feature/, fix/ or chore/ branches from main, without develop.
-  Use conventional commits and merge only after relevant verification. Preserve unrelated local edits.
+  Use one branch per feature and conventional commits. Keep implementation and OpenSpec archives on that branch.
+  Merge into main only after relevant verification AND an explicit user request to integrate; checks and archiving alone do not authorize merging. Preserve unrelated local edits.
   Run npm test and npm run check; export mobile bundles for app changes and build affected native platforms for native changes.
   Do not claim live authentication success from tests or compilation.
   Pure refactors with unchanged behavior declare skip_specs: true.
